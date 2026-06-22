@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+    --white: #ffffff;
+    --bg: #F4F5F7;
+    --menu: #181824;
+    --primary: #337D35;
+    --danger: #ae2b41;
+    --text: #000000;
+    --muted: #7e8186;
+    --warning: #856404
+}
+
+html,
+body {
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+}
+
+/* SCROLLBAR (biar dashboard kelihatan modern) */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f2a44;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2c3b5e;
+}
+
+/* GLOBAL STYLE */
+
+.card {
+  @apply rounded-xl p-4 px-8 shadow-md bg-[var(--white)];
+}
+
+.card-dorpdown {
+  @apply rounded-xl p-4 shadow-md bg-[var(--white)];
+}
+
+.card-stream {
+  @apply rounded-xl p-4 bg-[var(--white)] border border-[var(--muted)];
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg cursor-pointer transition shadow-md;
+}
+
+.btn-primary {
+  @apply px-4 py-2 rounded-lg cursor-pointer transition shadow-md bg-[var(--primary)] hover:bg-[#2c6b2e];
+}
+
+.text-xtitle {
+  @apply text-2xl font-medium text-[var(--black)];
+}
+
+.text-title {
+  @apply text-lg font-light text-[var(--black)];
+}
+
+.text-info {
+  @apply text-lg font-normal text-[var(--black)];
+}
+
+.text-subinfo {
+  @apply text-base font-light text-[var(--black)];
+}
+
+.text-warning {
+  @apply text-base font-normal text-[var(--warning)];
+}
+
+.parent {
+  @apply mx-auto max-w-5xl;
+}
+
+.log-card {
+  @apply rounded-xl p-4 border border-[#757575] bg-[#d6d8d9] h-fit overflow-y-auto mt-4;
+}
