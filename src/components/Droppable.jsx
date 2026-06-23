@@ -13,7 +13,7 @@ export default function Droppable({ id, children, onClick, isEmpty = true }) {
     <button
       onClick={onClick}
       ref={ref}
-      className={`relative w-15 h-20 border border-dashed rounded flex items-center justify-center ${!isEmpty ? "cursor-pointer" : ""}`}
+      className={`relative w-15 h-20 border border-dashed rounded flex items-center justify-center ${!isEmpty ? "cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-300" : ""}`}
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}>
       {children}

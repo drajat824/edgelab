@@ -27,7 +27,7 @@ export default function Ground() {
 
         <div className="card grid grid-cols-4" style={{paddingTop: "30px", paddingBottom: "30px"}} >
 
-          <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
             <div className="grid grid-cols-4 gap-4 p-4 border rounded-sm w-[200px] h-[250px] items-center justify-items-center">
               {CARDS1.map((slot, i) => {
                 return (

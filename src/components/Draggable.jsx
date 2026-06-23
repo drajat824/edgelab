@@ -7,12 +7,7 @@ export default function Draggable({ id, children }) {
 
   return (
     <>
-    <img ref={ref} src={children} alt="Ground" className="w-15 h-15 cursor-pointer" />
+      <img ref={ref} src={children} alt="Ground" className="w-fit h-15 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-300 bg-transparent" />
     </>
-    // <div
-    //   ref={ref}
-    //   className="w-12 h-12 bg-red-500 text-white flex items-center justify-center rounded cursor-grab">
-    //   {children}
-    // </div>
   );
 }
