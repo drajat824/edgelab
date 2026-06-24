@@ -18,7 +18,7 @@ const defaultBoard = () => ({
 });
 
 const dumyBoards = () => ([{
-  id: "board-1",
+  id: "board-0",
   name: "Board 1",
   slots: Array.from({ length: 12 }, (_, i) => ({
     id: `slot-${i}`,
@@ -26,7 +26,7 @@ const dumyBoards = () => ([{
   })),
 },
 {
-  id: "board-2",
+  id: "board-1",
   name: "Board 2",
   slots: Array.from({ length: 12 }, (_, i) => ({
     id: `slot-${i}`,
@@ -39,10 +39,10 @@ export default function Ground() {
 
   const [activeBoard, setActiveBoard] = useState(defaultBoard());
   const [boards, setBoards] = useState(dumyBoards());
-  console.log(activeBoard)
-  // console.log(boards)
+  const [isAddData, setAddData] = useState(false)
 
   const onSelectedBoard = (board) => {
+    setAddData(false)
     setActiveBoard({
       id: board?.id,
       name: board?.name,
@@ -51,28 +51,36 @@ export default function Ground() {
   }
 
   const onSave = () => {
-    setBoards((prevBoards) => {
-      const updatedBoards = prevBoards.map((board) => {
-        if (board.id === activeBoard.id) {
-          return {
-            ...board,
-            name: activeBoard.name,
-            slots: activeBoard.slots
-          };
-        }
-        return board;
-      });
-
-      return updatedBoards;
-    });
+    setAddData(false);
+    const isExistingBoard = boards.some((board) => board.id === activeBoard.id);
+    if (isExistingBoard) {
+      setBoards((prevBoards) =>
+        prevBoards.map((board) =>
+          board.id === activeBoard.id
+            ? { ...board, name: activeBoard.name, slots: activeBoard.slots }
+            : board
+        )
+      );
+    } else {
+      setBoards((prevBoards) => [...prevBoards, activeBoard]);
+    }
+    setActiveBoard(defaultBoard())
   };
+
+  const onAdd = () => {
+    setAddData(true)
+    const newBoard = defaultBoard();
+    newBoard.id = `board-${Date.now()}`;
+    newBoard.name = `Board ${boards.length + 1}`;
+    setActiveBoard(newBoard);
+
+  };
+
   return (
     <div className="parent">
       <p className="text-xtitle mb-4">Ground Truth Setting</p>
-
       <div className="flex flex-col gap-4">
-
-        <div className="card grid grid-cols-4" style={{ paddingTop: "30px", paddingBottom: "30px" }} >
+        <div className="card grid grid-cols-4 gap-y-15" style={{ paddingTop: "50px", paddingBottom: "30px" }} >
 
           {
             boards?.map((e, i) => {
@@ -114,14 +122,21 @@ export default function Ground() {
             })
           }
 
-          <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <button
+            onClick={onAdd}
+            className={`w-[200px] h-[250px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 group
+    ${isAddData
+                ? "border-2 border-blue-500 bg-blue-50/50 shadow-lg -translate-y-1"
+                : "border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-1"
+              }`}
+          >
             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl group-hover:scale-100 transition-transform pb-1">
               +
             </div>
             <p className="text-sm font-semibold text-gray-600 group-hover:text-gray-800">
-              Add Board
+              Add New Board
             </p>
-          </div>
+          </button>
 
 
         </div>
@@ -138,7 +153,6 @@ export default function Ground() {
             const slotId = target.id;
             const card = CARDS.find((c) => c.id === cardId);
 
-            // Pastikan kartu ditemukan sebelum melakukan update state
             if (card) {
               setActiveBoard((prev) => ({
                 ...prev,

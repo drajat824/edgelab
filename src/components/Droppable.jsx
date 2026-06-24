@@ -13,8 +13,7 @@ export default function Droppable({ id, children, onClick, isEmpty = true, disab
     disabled ? (
       /* Tampilan saat DISABLED (tidak bisa diinteraksi, tidak ada efek hover) */
       <div
-        className="relative w-15 h-20 border border-gray-200 bg-gray-400 rounded flex items-center justify-center cursor-not-allowed opacity-60"
-      >
+        className="relative w-15 h-20 border border-gray-200 bg-gray-400 rounded flex items-center justify-center cursor-not-allowed opacity-60">
         {children}
       </div>
     ) : (
@@ -22,7 +21,7 @@ export default function Droppable({ id, children, onClick, isEmpty = true, disab
       <button
         onClick={onClick}
         ref={ref}
-        className={`relative w-15 h-20 border border-dashed rounded flex items-center justify-center transition-all duration-300 ${!isEmpty ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : "border-gray-300"}`}
+        className={`relative w-15 h-20 border border-dashed rounded flex items-center justify-center transition-all duration-300 ${!isEmpty ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : "border-gray-500"}`}
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}>
         {children}
