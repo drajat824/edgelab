@@ -39,7 +39,10 @@ export default function Ground() {
 
   const [activeBoard, setActiveBoard] = useState(defaultBoard());
   const [boards, setBoards] = useState(dumyBoards());
-  const [isAddData, setAddData] = useState(false)
+  const [isAddData, setAddData] = useState(false);
+
+  const isBoardEmpty = activeBoard?.slots?.every((slot) => slot.value === null);
+  const isSaveDisabled = !activeBoard?.name?.trim()
 
   const onSelectedBoard = (board) => {
     setAddData(false)
@@ -192,7 +195,7 @@ export default function Ground() {
                 {activeBoard.slots.map((e, i) => {
                   return (
                     <Droppable
-                      disabled={!activeBoard?.id?.trim()}
+                      disabled={isSaveDisabled}
                       isEmpty={!!e.value ? false : true}
                       key={e.id}
                       id={e.id}
@@ -211,9 +214,9 @@ export default function Ground() {
                 })}
               </div>
               <div className="flex-none gap-4 flex flex-col" >
-                <TextInput disabled={!activeBoard?.id?.trim()} value={activeBoard?.name} placeholder="Input board name" onChange={(e) => setActiveBoard((p) => ({ ...p, name: e.target.value }))} />
+                <TextInput disabled={isSaveDisabled} value={activeBoard?.name} placeholder="Input board name" onChange={(e) => setActiveBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
-                  <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: !activeBoard?.id?.trim() ? 'not-allowed' : 'pointer', backgroundColor: activeBoard?.id?.trim() ? '#337D35' : '#7e8186' }} onClick={onSave} disabled={!activeBoard?.id?.trim()}>
+                  <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: isSaveDisabled || isBoardEmpty ? 'not-allowed' : 'pointer', backgroundColor: isSaveDisabled || isBoardEmpty ? '#7e8186' : '#337D35' }} onClick={onSave} disabled={isSaveDisabled || isBoardEmpty}>
                     SAVE
                   </button>
                 </div>
