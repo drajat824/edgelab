@@ -9,6 +9,7 @@ const TextInput = ({
   className = "",
   type = "text",
   width = "w-full",
+  disabled
 }) => {
   return (
     <div className={`${width} ${className} text-info`}>
@@ -23,6 +24,7 @@ const TextInput = ({
           }
           value={value}
           onChange={onChange}
+          disabled={disabled}
           placeholder={placeholder}
           className="w-full px-3 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-[var(--menu)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />

@@ -8,44 +8,111 @@ import Draggable from "../components/Draggable";
 import CARDS from "../components/Cards"
 import { CARDS1, CARDS2, CARDS3 } from "../components/CardsTemp"
 
-const createBoard = () => ({
-  id: "board-1",
+const defaultBoard = () => ({
+  id: "",
+  name: "",
   slots: Array.from({ length: 12 }, (_, i) => ({
     id: `slot-${i}`,
     value: null,
   })),
 });
 
-export default function Ground() {
-  const [board, setBoard] = useState(createBoard());
+const dumyBoards = () => ([{
+  id: "board-1",
+  name: "Board 1",
+  slots: Array.from({ length: 12 }, (_, i) => ({
+    id: `slot-${i}`,
+    value: CARDS[i * 4],
+  })),
+},
+{
+  id: "board-2",
+  name: "Board 2",
+  slots: Array.from({ length: 12 }, (_, i) => ({
+    id: `slot-${i}`,
+    value: CARDS[i * 2],
+  })),
+},
+]);
 
+export default function Ground() {
+
+  const [activeBoard, setActiveBoard] = useState(defaultBoard());
+  const [boards, setBoards] = useState(dumyBoards());
+  console.log(activeBoard)
+  // console.log(boards)
+
+  const onSelectedBoard = (board) => {
+    setActiveBoard({
+      id: board?.id,
+      name: board?.name,
+      slots: board?.slots
+    })
+  }
+
+  const onSave = () => {
+    setBoards((prevBoards) => {
+      const updatedBoards = prevBoards.map((board) => {
+        if (board.id === activeBoard.id) {
+          return {
+            ...board,
+            name: activeBoard.name,
+            slots: activeBoard.slots
+          };
+        }
+        return board;
+      });
+
+      return updatedBoards;
+    });
+  };
   return (
     <div className="parent">
       <p className="text-xtitle mb-4">Ground Truth Setting</p>
 
       <div className="flex flex-col gap-4">
 
-        <div className="card grid grid-cols-4" style={{paddingTop: "30px", paddingBottom: "30px"}} >
+        <div className="card grid grid-cols-4" style={{ paddingTop: "30px", paddingBottom: "30px" }} >
 
-          <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
-            <div className="grid grid-cols-4 gap-4 p-4 border rounded-sm w-[200px] h-[250px] items-center justify-items-center">
-              {CARDS1.map((slot, i) => {
-                return (
-                  <img src={slot?.img} alt="Ground" className="w-7 h-15" />
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-            <div className="grid grid-cols-4 gap-4 p-4 border rounded-sm w-[200px] h-[250px] items-center justify-items-center">
-              {CARDS1.map((slot, i) => {
-                return (
-                  <img src={slot?.img} alt="Ground" className="w-7 h-15" />
-                )
-              })}
-            </div>
-          </div>
+          {
+            boards?.map((e, i) => {
+              const totalCards = e?.slots?.filter(slot => slot?.value).length || 0;
+              let selected = e?.id == activeBoard?.id ? true : false
+              return (
+                <button onClick={() => onSelectedBoard(e)} className={`w-[200px] h-[250px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-white group ${selected ? "shadow-xl -translate-y-1" : "hover:shadow-lg hover:-translate-y-1 transition-all duration-200"}`}>
+                  <div className="flex flex-col gap-2 w-[200px]">
+                    <div className="flex items-center justify-between px-1 border-none">
+                      <span className="text-subinfo uppercase" style={{ fontWeight: 'normal', color: selected ? "blue" : "black" }}>
+                        {e?.name}
+                      </span>
+                      <span className="text-subinfo bg-blue-100 text-slate-600 px-1.5 py-0.5 rounded-full font-medium">
+                        {totalCards} CARDS
+                      </span>
+                    </div>
+                    {/* Grid Card */}
+                    <div className={`grid grid-cols-4 gap-4 p-4 ${selected ? "border-1 border-blue-500" : "border border-slate-200"} rounded-md h-[250px] items-center justify-items-center bg-white shadow-sm`}>
+                      {e.slots.map((card, i) => {
+                        return card?.value ? (
+                          <img
+                            key={i}
+                            src={card?.value?.img}
+                            alt="Ground"
+                            className="w-7 h-15 object-contain"
+                          />
+                        ) : (
+                          /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
+                          <div
+                            key={i}
+                            className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300"
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                </button>
+              )
+            })
+          }
 
           <div className="w-[200px] h-[250px] rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl group-hover:scale-100 transition-transform pb-1">
@@ -71,16 +138,22 @@ export default function Ground() {
             const slotId = target.id;
             const card = CARDS.find((c) => c.id === cardId);
 
-            setBoard((prev) => ({
-              ...prev,
-              slots: prev.slots.map((slot, i) =>
-                slot.id === slotId
-                  ? { ...slot, value: cardId, img: card.img }
-                  : slot
-              ),
-            }));
+            // Pastikan kartu ditemukan sebelum melakukan update state
+            if (card) {
+              setActiveBoard((prev) => ({
+                ...prev,
+                slots: prev.slots.map((e) => e.id === slotId ? {
+                  ...e, value: {
+                    id: card.id,
+                    img: card.img
+                  }
+                } : e
+                ),
+              }));
+            }
           }}
         >
+
           <div className="flex gap-4">
 
             {/* PALETTE (tidak hilang, reusable) */}
@@ -99,25 +172,24 @@ export default function Ground() {
               </div>
             </div>
 
-            {/* BOARD GRID */}
+            {/* EDIT BOARD GRID */}
             <div className="card flex flex-col justify-between" style={{ paddingTop: 30, paddingBottom: 30 }}>
               <div className="grid grid-cols-4 gap-2 p-2 border rounded-lg">
-                {board.slots.map((slot, i) => {
+                {activeBoard.slots.map((e, i) => {
                   return (
-
                     <Droppable
-                      isEmpty={!!slot.value ? false : true}
-                      key={slot.id}
-                      id={slot.id}
+                      disabled={!activeBoard?.id?.trim()}
+                      isEmpty={!!e.value ? false : true}
+                      key={e.id}
+                      id={e.id}
                       onClick={() =>
-                        setBoard((prev) => ({
+                        setActiveBoard((prev) => ({
                           ...prev, slots: prev.slots.map((s, index) => index === i ? { ...s, value: null } : s),
                         }))
-                      }
-                    >
-                      {slot.value && (
+                      }>
+                      {e.value && (
                         <>
-                          <img src={slot?.img} alt="Ground" className="w-15 h-15" />
+                          <img src={e?.value?.img} alt="Ground" className="w-15 h-15" />
                         </>
                       )}
                     </Droppable>
@@ -125,13 +197,10 @@ export default function Ground() {
                 })}
               </div>
               <div className="flex-none gap-4 flex flex-col" >
-                <TextInput placeholder="Input board name" />
+                <TextInput disabled={!activeBoard?.id?.trim()} value={activeBoard?.name} placeholder="Input board name" onChange={(e) => setActiveBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
-                  <button className="btn btn-primary text-white flex-1">
+                  <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: !activeBoard?.id?.trim() ? 'not-allowed' : 'pointer', backgroundColor: activeBoard?.id?.trim() ? '#337D35' : '#7e8186' }} onClick={onSave} disabled={!activeBoard?.id?.trim()}>
                     SAVE
-                  </button>
-                  <button className="btn text-red-600 flex-1 border-1 hover:bg-red-100">
-                    RESET
                   </button>
                 </div>
               </div>
@@ -141,6 +210,6 @@ export default function Ground() {
         </DragDropProvider>
 
       </div>
-    </div>
+    </div >
   );
 }
