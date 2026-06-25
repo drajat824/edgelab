@@ -78,7 +78,7 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning lg:fixed">*Available Maximum Frequency: 1.8 GHz</p>
+              {/* <p className="text-warning lg:fixed">*Available Maximum Frequency: 1.8 GHz</p> */}
             </div>
           </div>
           {/* Button  */}
@@ -538,6 +538,75 @@ export default function Cpu() {
           </button>
         </div>
       </div>}
+
+      {/* Log  */}
+      <Log value="echo 1800000 | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq" />
+
+      {/* Thread & Core  */}
+      <div className='pt-8'>
+
+        {/* Title  */}
+        <h1 className="text-xtitle">
+          Thread Allocation & Core Pinning
+        </h1>
+
+        <p className="text-subinfo mt-2 text-gray-500">
+          Optimize performance by assigning processes to specific CPU cores and managing thread distribution.
+        </p>
+
+        {/* Card  */}
+        <div className='flex flex-col lg:flex-row pt-4 justify-between gap-4'>
+
+          <div className='flex-1'>
+            <div className="card">
+              <div className='flex flex-col h-[150px] justify-between'>
+                <p className="text-info" style={{ fontWeight: "bold" }}>Thread Allocation</p>
+                <div>
+                  <InputWithUnit
+                    type="number"
+                    // value={temp}
+                    // onChange={(e) => setTemp(e.target.value)}
+                    placeholder="Input thread"
+                  />
+                </div>
+                <button className="btn-primary text-white w-32">
+                  <p className="text-info">SAVE</p>
+                </button>
+              </div>
+            </div>
+            {/* Log  */}
+            <Log value="taskset -c 0, 1,2,3  python app.py" />
+          </div>
+
+          <div className='flex-1'>
+            <div className="card">
+              <div className='flex flex-col min-h-[150px] justify-between gap-4'>
+                <p className="text-info" style={{ fontWeight: "bold" }}>Core Pinning</p>
+                <div>
+                  <RadioButton
+                    name="mode"
+                    // value={mode}
+                    // onChange={setMode}
+                    options={[
+                      { label: "Core 0", value: "0" },
+                      { label: "Core 1", value: "1" },
+                      { label: "Core 2", value: "2" },
+                      { label: "Core 3", value: "3" },
+                    ]}
+                  />
+                </div>
+                <button className="btn-primary text-white w-32">
+                  <p className="text-info">SAVE</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Log  */}
+            <Log value="taskset -c 0, 1,2,3  python app.py" />
+          </div>
+
+        </div>
+      </div>
 
     </div>
   )

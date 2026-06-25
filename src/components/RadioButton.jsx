@@ -2,7 +2,7 @@ import React from "react";
 
 const RadioButton = ({ options = [], value, onChange, name, className = "" }) => {
   return (
-    <div className={`flex gap-6 ${className} text-info`}>
+    <div className={`flex flex-col lg:flex-row gap-6 ${className} text-info`}>
       {options.map((opt, index) => {
         const id = `${name}-${index}`;
 
