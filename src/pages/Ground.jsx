@@ -202,7 +202,7 @@ export default function Ground() {
 
             {/* EDIT BOARD GRID */}
             <div className="card flex flex-col justify-between" style={{ paddingTop: 30, paddingBottom: 30 }}>
-              <div className="grid grid-cols-4 gap-2 p-2 border rounded-lg">
+              <div className="grid grid-cols-4 gap-2 p-2 border rounded-lg place-items-center">
                 {activeBoard.slots.map((e, i) => {
                   return (
                     <Droppable
