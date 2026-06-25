@@ -11,7 +11,7 @@ export default function Main() {
   const [gt, setGt] = useState("Board 1")
 
   const [streamMode, setStreamMode] = useState(0) // 0: Stop, 1: Start
-  
+
   useEffect(() => {
     console.log("Stream Mode changed:", streamMode);
   }, [streamMode]);
@@ -29,8 +29,12 @@ export default function Main() {
   return (
     <div className="parent">
       <p className="text-xtitle">Live Camera Stream</p>
-      <div className="flex justify-between mt-4 gap-4">
-        <div className="flex flex-col flex-1 max-w-[650px]">
+
+      {/* Main Streaming  */}
+
+      <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
+        {/* STREAMING  */}
+        <div className="flex flex-col flex-1">
           <div className="flex justify-between mb-4">
             {/* Model & FPS  */}
             <Dropdown
@@ -56,7 +60,7 @@ export default function Main() {
             />
           </div>
           {/* Streaming Camera */}
-          <div className="card-stream w-[650px] h-[350px] flex items-center justify-center">
+          <div className="card-stream w-full h-[350px] flex items-center justify-center">
             <p>Camera Stream!</p>
           </div>
           {/* Button */}
@@ -81,7 +85,9 @@ export default function Main() {
             </button>
           </div>
         </div>
-        <div className="flex-auto flex flex-col">
+
+        {/* MODEL INFO  */}
+        <div className="flex-none flex flex-col">
           <div className="flex justify-end">
             <Dropdown
               value={gt}
@@ -138,13 +144,14 @@ export default function Main() {
             </div>
           </div>
         </div>
+        
       </div>
 
-      <div className="flex justify-between gap-4 mt-4">
-        <div className="flex-1 max-w-[650px]">
-
+      {/* INFO  */}
+      <div className="flex flex-col lg:flex-row justify-between gap-4 mt-4 max-w-screen">
+        <div className="flex-1">
           {/* CPU Utilization */}
-          <div className="card w-[650px] rounded-lg shadow-md gap-4 h-full">
+          <div className="card w-full h-full rounded-lg shadow-md gap-4">
             <p className="text-title">CPU Utilization</p>
             <p className="text-info mb-4 mt-2">Average: {cpuUtilization}%</p>
             <div className="flex gap-8 mb-4">
@@ -181,35 +188,40 @@ export default function Main() {
             </div>
           </div>
         </div>
-        <div className="flex flex-auto flex-col gap-2">
-          <div className="card">
-            <p className="text-title">CPU Status</p>
-            <div className="flex mt-2 gap-5">
-              <div className="flex flex-col gap-1">
-                <p className="text-info">Frequency:</p>
-                <p className="text-info">Temperature:</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-info">1,2 GHz</p>
-                <p className="text-info">45°C</p>
+
+        {/* CPU STATUS  */}
+        <div className="flex-none flex flex-col">
+          <div className="flex flex-auto flex-col gap-2">
+            <div className="card">
+              <p className="text-title">CPU Status</p>
+              <div className="flex mt-2 gap-5">
+                <div className="flex flex-col gap-1">
+                  <p className="text-info">Frequency:</p>
+                  <p className="text-info">Temperature:</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-info">1,2 GHz</p>
+                  <p className="text-info">45°C</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="card">
-            <div className="flex gap-5">
-              <div className="flex flex-col gap-1">
-                <p className="text-info">CPU Governor:</p>
-                <p className="text-info">Thread Allocation:</p>
-                <p className="text-info">Core Pinning:</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-info">Performance</p>
-                <p className="text-info">4</p>
-                <p className="text-info">0, 1, 2</p>
+            <div className="card">
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-subinfo">CPU Governor:</p>
+                  <p className="text-subinfo">Thread Allocation:</p>
+                  <p className="text-subinfo">Core Pinning:</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>Performance</p>
+                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>4</p>
+                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>0, 1, 2</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )
