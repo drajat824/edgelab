@@ -188,7 +188,7 @@ export default function Ground() {
               <p className="text-info pl-2 pb-4" style={{ fontWeight: 'bold' }}>DRAG & DROP</p>
               <hr className="border-t border-gray-300 w-[500] -mx-8 pb-6" />
 
-              <div className="grid grid-cols-8 gap-2 pb-4">
+              <div className="grid grid-cols-8 gap-2 pb-4 justify-items-center">
                 {CARDS.map((card, i) => {
                   return (
                     <Draggable key={card.id} id={card.id}>
