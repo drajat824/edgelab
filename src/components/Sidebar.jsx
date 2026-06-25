@@ -75,7 +75,7 @@ export default function Navbar() {
             </nav>
 
             <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--menu)] border-t border-gray-700 flex justify-around items-center h-16 z-50 px-2">
-                <NavLink to="/" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4 py-1 rounded-sm' : 'text-gray-400'}`}>
+                <NavLink to="/" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4  h-[102%] justify-center -mt-0.5' : 'text-gray-400 bg-transparent px-4 py-1 rounded-sm'}`}>
                     {({ isActive }) => (
                         <>
                             <img src={isActive ? MenuMainActive : MenuMain} alt="Main" className="w-6 h-6" />
@@ -84,7 +84,7 @@ export default function Navbar() {
                     )}
                 </NavLink>
 
-                <NavLink to="/cpu" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4 py-1 rounded-sm' : 'text-gray-400'}`}>
+                <NavLink to="/cpu" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4  h-[102%] justify-center -mt-0.5' : 'text-gray-400 bg-transparent px-4 py-1 rounded-sm'}`}>
                     {({ isActive }) => (
                         <>
                             <img src={isActive ? MenuCpuActive : MenuCpu} alt="CPU" className="w-6 h-6" />
@@ -93,7 +93,7 @@ export default function Navbar() {
                     )}
                 </NavLink>
 
-                <NavLink to="/ground" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4 py-1 rounded-sm' : 'text-gray-400'}`}>
+                <NavLink to="/ground" className={({ isActive }) => `flex flex-col items-center text-xs gap-1 ${isActive ? 'text-black bg-white px-4  h-[102%] justify-center -mt-0.5' : 'text-gray-400 bg-transparent px-4 py-1 rounded-sm'}`}>
                     {({ isActive }) => (
                         <>
                             <img src={isActive ? MenuGroundActive : MenuGround} alt="Ground" className="w-6 h-6" />
