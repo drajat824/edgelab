@@ -26,8 +26,11 @@ export default function Cpu() {
       <p className="text-subinfo mt-2 text-gray-500">
         Manage CPU performance by adjusting voltage and frequency dynamically.
       </p>
-      <div className='flex gap-4'>
+
+      <div className='flex flex-col lg:flex-row'>
         <div className="flex-none flex items-center py-4 gap-12">
+
+          {/* Dropdown  */}
           <p className="text-info">CPU Governor</p>
           <Dropdown
             value={governor}
@@ -36,11 +39,14 @@ export default function Cpu() {
             width="w-48"
           />
         </div>
-        <div className='flex-1 flex justify-between items-center'>
-          <button style={{ color: 'white' }} className='btn bg-blue-500 hover:bg-blue-700 text-subinfo'>
+        <div className='flex-1 flex flex-col lg:flex-row lg:justify-between lg:items-center'>
+
+          {/* Button Change */}
+          <button style={{ color: 'white' }} className='btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4'>
             CHANGE
           </button>
-          {/* <p className='text-info'>Governor Mode active: <span style={{ fontWeight: "bold" }}>Performance</span></p> */}
+
+          {/* Governor Info  */}
           <div className="rounded-md px-2 py-2">
             <p className="text-sm text-black-500">
               Governor Mode Active
@@ -50,20 +56,21 @@ export default function Cpu() {
             </p>
           </div>
         </div>
-
       </div>
 
       {/* Performance  */}
       {governor == "Performance" && <div>
         <div className="card flex flex-col gap-5">
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Performance <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between">
+          {/* Input */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:items-center lg:justify-between pb-4">
             <div className="flex-none">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -71,10 +78,11 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning lg:fixed">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <button className="btn-primary text-white w-32">
+          {/* Button  */}
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
@@ -83,14 +91,16 @@ export default function Cpu() {
       {/* Powersave  */}
       {governor == "Powersave" && <div>
         <div className="card flex flex-col gap-5">
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Powersave <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between">
+          {/* Input */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:items-center lg:justify-between pb-4">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -98,10 +108,11 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning lg:fixed">*Available Minimum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <button className="btn-primary text-white w-32">
+          {/* Button  */}
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
@@ -110,14 +121,18 @@ export default function Cpu() {
       {/* Ondemand  */}
       {governor == "Ondemand" && <div>
         <div className="card flex flex-col gap-5">
+
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Ondemand <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Max  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -128,11 +143,13 @@ export default function Cpu() {
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Min  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -140,15 +157,16 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
 
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+          {/* Threshold  */}
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
             <div className="flex-none">
               <p className="text-info">Threshold</p>
             </div>
-            <div className="w-[70%] flex justify-between">
+            <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
               <div className='flex items-center gap-8'>
                 <p className="text-info">Up</p>
                 <InputWithUnit type="number" placeholder="Up Threshold" unit="%" />
@@ -159,35 +177,41 @@ export default function Cpu() {
               </div>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Sampling Rate  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Sampling Rate</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="ms"
                 // value={temp}
                 // onChange={(e) => setTemp(e.target.value)}
-                placeholder="Input sampling rate"
+                placeholder="Input samping rate"
               />
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Sampling Down Factor  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Sampling Down Factor</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="ms"
                 // value={temp}
                 // onChange={(e) => setTemp(e.target.value)}
-                placeholder="Input sampling down factor"
+                placeholder="Input samping down factor"
               />
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Ignore Nice Load */}
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
             <div className="flex-none">
               <p className="text-info">Ignore Nice Load</p>
             </div>
@@ -207,22 +231,24 @@ export default function Cpu() {
               </div>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Power Bias  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Power Bias</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="%"
                 // value={temp}
                 // onChange={(e) => setTemp(e.target.value)}
-                placeholder="Input sampling down factor"
+                placeholder="Input power bias"
               />
             </div>
           </div>
 
-          <button className="btn-primary text-white w-32">
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
@@ -231,14 +257,18 @@ export default function Cpu() {
       {/* Conservative  */}
       {governor == "Conservative" && <div>
         <div className="card flex flex-col gap-5">
+
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Conservative <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Max  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -249,11 +279,13 @@ export default function Cpu() {
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Min  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -261,15 +293,16 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
 
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+          {/* Threshold  */}
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
             <div className="flex-none">
               <p className="text-info">Threshold</p>
             </div>
-            <div className="w-[70%] flex justify-between">
+            <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
               <div className='flex items-center gap-8'>
                 <p className="text-info">Up</p>
                 <InputWithUnit type="number" placeholder="Up Threshold" unit="%" />
@@ -280,35 +313,41 @@ export default function Cpu() {
               </div>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Sampling Rate  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Sampling Rate</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="ms"
                 // value={temp}
                 // onChange={(e) => setTemp(e.target.value)}
-                placeholder="Input sampling rate"
+                placeholder="Input samping rate"
               />
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Sampling Down Factor  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Sampling Down Factor</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="ms"
                 // value={temp}
                 // onChange={(e) => setTemp(e.target.value)}
-                placeholder="Input sampling down factor"
+                placeholder="Input samping down factor"
               />
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Ignore Nice Load */}
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
             <div className="flex-none">
               <p className="text-info">Ignore Nice Load</p>
             </div>
@@ -321,11 +360,13 @@ export default function Cpu() {
               </div>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-2">
+
+          {/* Frequency Step  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Frequency Step</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="%"
@@ -336,7 +377,7 @@ export default function Cpu() {
             </div>
           </div>
 
-          <button className="btn-primary text-white w-32">
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
@@ -345,14 +386,18 @@ export default function Cpu() {
       {/* Schedutil  */}
       {governor == "Schedutil" && <div>
         <div className="card flex flex-col gap-5">
+
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Schedutil <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Max  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -363,11 +408,13 @@ export default function Cpu() {
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Min  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -375,14 +422,16 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between">
+
+          {/* Rate Limit  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Rate Limit</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="ms"
@@ -393,7 +442,7 @@ export default function Cpu() {
             </div>
           </div>
 
-          <button className="btn-primary text-white w-32">
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
@@ -402,14 +451,18 @@ export default function Cpu() {
       {/* Userspace  */}
       {governor == "Userspace" && <div>
         <div className="card flex flex-col gap-5">
+
+          {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
             Userspace <span className="text-info">Mode Settings</span>
           </p>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Max  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -420,11 +473,13 @@ export default function Cpu() {
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between mb-5">
+
+          {/* Min  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -432,14 +487,16 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning absolute">*Available Minimum Frequency: 0.66 GHz</p>
             </div>
           </div>
-          <div className="flex flex-row gap-4 w-full gap-4 items-center justify-between">
+
+          {/* Rate Limit  */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
-              <p className="text-info">Fixed Frquency</p>
+              <p className="text-info">Fixed Frequency</p>
             </div>
-            <div className="w-[70%]">
+            <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
                 unit="GHz"
@@ -449,6 +506,7 @@ export default function Cpu() {
               />
             </div>
           </div>
+
           <div>
             <div className='flex gap-2 items-center' >
               <Checkbox
@@ -458,7 +516,7 @@ export default function Cpu() {
               <p className='text-info'>Dynamic Scripting</p>
             </div>
 
-            <div className='flex gap-4 pt-4'>
+            <div className='flex flex-col lg:flex-row gap-4 pt-4'>
               <div className='flex-1'>
                 <ScriptEditor
                   disabled={!dynamic}
@@ -475,78 +533,12 @@ export default function Cpu() {
             </div>
           </div>
 
-          <button className="btn-primary text-white w-32">
+          <button className="btn-primary text-white w-full lg:w-32">
             <p className="text-info">SAVE</p>
           </button>
         </div>
       </div>}
 
-      {/* Log  */}
-      <Log value="echo 1800000 | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq" />
-
-      {/* Thread & Core  */}
-      <div className='pt-8'>
-        {/* Title  */}
-        <h1 className="text-xtitle">
-          Thread Allocation & Core Pinning
-        </h1>
-
-        <p className="text-subinfo mt-2 text-gray-500">
-          Optimize performance by assigning processes to specific CPU cores and managing thread distribution.
-        </p>
-
-        <div className='flex pt-4 justify-between gap-4'>
-
-          <div className='flex-1'>
-            <div className="card">
-              <div className='flex flex-col h-[150px] justify-between'>
-                <p className="text-info">Thread Allocation</p>
-                <div>
-                  <InputWithUnit
-                    type="number"
-                    // value={temp}
-                    // onChange={(e) => setTemp(e.target.value)}
-                    placeholder="Input thread"
-                  />
-                </div>
-                <button className="btn-primary text-white w-32">
-                  <p className="text-info">SAVE</p>
-                </button>
-              </div>
-            </div>
-            {/* Log  */}
-            <Log value="taskset -c 0, 1,2,3  python app.py" />
-          </div>
-
-          <div className='flex-1'>
-            <div className="card">
-              <div className='flex flex-col h-[150px] justify-between'>
-                <p className="text-info">Core Pinning</p>
-                <div>
-                  <RadioButton
-                    name="mode"
-                    // value={mode}
-                    // onChange={setMode}
-                    options={[
-                      { label: "Core 0", value: "0" },
-                      { label: "Core 1", value: "1" },
-                      { label: "Core 2", value: "2" },
-                      { label: "Core 3", value: "3" },
-                    ]}
-                  />
-                </div>
-                <button className="btn-primary text-white w-32">
-                  <p className="text-info">SAVE</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Log  */}
-            <Log value="taskset -c 0, 1,2,3  python app.py" />
-          </div>
-
-        </div>
-      </div>
     </div>
   )
 }
