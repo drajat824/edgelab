@@ -28,7 +28,12 @@ export default function Main() {
 
   return (
     <div className="parent">
-      <p className="text-xtitle">Live Camera Stream</p>
+      <h1 className="text-xtitle">
+        Main Monitor
+      </h1>
+      <p className="text-subinfo mt-2 text-gray-500">
+        Monitor camera streams along with model and CPU metrics.
+      </p>
 
       {/* Main Streaming  */}
 

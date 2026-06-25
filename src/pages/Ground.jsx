@@ -87,7 +87,12 @@ export default function Ground() {
 
   return (
     <div className="parent">
-      <p className="text-xtitle mb-4">Ground Truth Setting</p>
+      <h1 className="text-xtitle">
+        Ground Truth
+      </h1>
+      <p className="text-subinfo mt-2 text-gray-500 pb-5">
+        Configure the board's ground truth based on the available cards.
+      </p>
       <div className="flex flex-col gap-4">
         <div className="card grid grid-cols-1 lg:grid-cols-2 laptop:grid-cols-4 gap-y-5 gap-x-4 items-center" style={{ paddingTop: "30px", paddingBottom: "30px" }} >
           {
@@ -225,7 +230,7 @@ export default function Ground() {
                 })}
               </div>
               <div className="flex-none flex flex-col gap-2 pt-4" >
-                <p className="text-info" style={{fontWeight: "bold"}} >Board Name</p>
+                <p className="text-info" style={{ fontWeight: "bold" }} >Board Name</p>
                 <TextInput disabled={isSaveDisabled} value={activeBoard?.name} placeholder="Input board name" onChange={(e) => setActiveBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
                   <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: isSaveDisabled || isBoardEmpty ? 'not-allowed' : 'pointer', backgroundColor: isSaveDisabled || isBoardEmpty ? '#7e8186' : '#337D35' }} onClick={onSave} disabled={isSaveDisabled || isBoardEmpty}>
