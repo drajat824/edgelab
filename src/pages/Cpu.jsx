@@ -569,7 +569,7 @@ export default function Cpu() {
                     placeholder="Input thread"
                   />
                 </div>
-                <button className="btn-primary text-white w-32">
+                <button className="btn-primary text-white w-full lg:w-32">
                   <p className="text-info">SAVE</p>
                 </button>
               </div>
@@ -595,7 +595,7 @@ export default function Cpu() {
                     ]}
                   />
                 </div>
-                <button className="btn-primary text-white w-32">
+                <button className="btn-primary text-white w-full lg:w-32">
                   <p className="text-info">SAVE</p>
                 </button>
               </div>
