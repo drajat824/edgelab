@@ -72,6 +72,10 @@ export default function Ground() {
     setActiveBoard(defaultBoard())
   };
 
+  const onDelete = (id) => {
+    setBoards((prevBoards) => prevBoards.filter((board) => board.id !== id));
+  };
+
   const onAdd = () => {
     setAddData(true)
     const newBoard = defaultBoard();
@@ -123,7 +127,7 @@ export default function Ground() {
                       </div>
                     </div>
                   </button>
-                  <button className="btn bg-red-500 hover:bg-red-600 text-white w-[200px] flex items-center justify-center gap-1 transition-colors duration-200">
+                  <button className="btn bg-red-500 hover:bg-red-600 text-white w-[200px] flex items-center justify-center gap-1 transition-colors duration-200" onClick={() => onDelete(e.id)}>
                     <img src={Delete} className="w-5 h-5" />
                     <p className="text-subinfo" style={{ color: 'white', fontWeight: 'normal' }}>DELETE</p>
                   </button>
