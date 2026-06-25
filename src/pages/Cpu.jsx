@@ -78,7 +78,7 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              {/* <p className="text-warning lg:fixed">*Available Maximum Frequency: 1.8 GHz</p> */}
+              <p className="text-warning">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
           {/* Button  */}
@@ -108,7 +108,7 @@ export default function Cpu() {
                 // onChange={(e) => setTemp(e.target.value)}
                 placeholder="Input frequency"
               />
-              <p className="text-warning lg:fixed">*Available Minimum Frequency: 1.8 GHz</p>
+              <p className="text-warning">*Available Minimum Frequency: 1.8 GHz</p>
             </div>
           </div>
           {/* Button  */}
