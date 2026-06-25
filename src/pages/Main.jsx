@@ -35,7 +35,7 @@ export default function Main() {
       <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
         {/* STREAMING  */}
         <div className="flex flex-col flex-1">
-          
+
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown
@@ -146,7 +146,7 @@ export default function Main() {
             </div>
           </div>
         </div>
-        
+
       </div>
 
       {/* INFO  */}
@@ -192,7 +192,7 @@ export default function Main() {
         </div>
 
         {/* CPU STATUS  */}
-        <div className="flex-none flex flex-col">
+        <div className="flex-none flex flex-col min-w-75">
           <div className="flex flex-auto flex-col gap-2">
             <div className="card">
               <p className="text-title">CPU Status</p>
@@ -215,9 +215,9 @@ export default function Main() {
                   <p className="text-subinfo">Core Pinning:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>Performance</p>
-                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>4</p>
-                  <p className="text-subinfo" style={{fontWeight: 'bold'}}>0, 1, 2</p>
+                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>Performance</p>
+                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>4</p>
+                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>0, 1, 2</p>
                 </div>
               </div>
             </div>
