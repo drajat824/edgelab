@@ -35,7 +35,8 @@ export default function Main() {
       <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
         {/* STREAMING  */}
         <div className="flex flex-col flex-1">
-          <div className="flex justify-between mb-4">
+          
+          <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown
               value={model}
@@ -59,6 +60,7 @@ export default function Main() {
               ]}
             />
           </div>
+
           {/* Streaming Camera */}
           <div className="card-stream w-full h-[350px] flex items-center justify-center">
             <p>Camera Stream!</p>
