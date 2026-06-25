@@ -9,7 +9,7 @@ const Log = ({
     return (
         <div className={`log-card ${className}`}>
             <p className="text-info" style={{fontWeight: "bold"}}>
-                Execution Log
+                Generated Command
             </p>
             <div className="mt-4 relative">
                 <textarea
