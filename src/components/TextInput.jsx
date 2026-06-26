@@ -9,7 +9,7 @@ const TextInput = ({
   className = "",
   type = "text",
   width = "w-full",
-  disabled
+  disabled = false
 }) => {
   return (
     <div className={`${width} ${className} text-info`}>
@@ -26,7 +26,8 @@ const TextInput = ({
           onChange={onChange}
           disabled={disabled}
           placeholder={placeholder}
-          className="w-full px-3 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-[var(--menu)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className={`w-full px-3 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-[var(--menu)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-50`}
+          disabled={disabled}
         />
         {/* Unit pojok kanan atas */}
         {unit && (

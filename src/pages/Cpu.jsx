@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Dropdown from '../components/Dropdown'
 import InputWithUnit from '../components/TextInput'
 import Log from '../components/Log';
@@ -6,14 +6,39 @@ import RadioButton from '../components/RadioButton';
 import Checkbox from '../components/Checkbox';
 import ScriptReference from '../components/ScriptReference'
 import ScriptEditor from '../components/ScriptEditor'
+import ButtonSave from '../components/ButtonSave'
+
+// State Management
+import useCPU from "../hooks/useCPU"
 
 export default function Cpu() {
 
-  const [governor, setGovernor] = useState('Performance');
-  const [ignoreNiceLoad, setIgnoreNiceLoad] = useState(false);
-  const [IOBusy, setIOBusy] = useState(false);
-  const [dynamic, setDynamic] = useState(true);
-  const [script, setScript] = useState("")
+  const { cpu, dispatch } = useCPU();
+  const [script, setScript] = useState("");
+
+  const [draft, setDraft] = useState({
+    governor: "",
+    minFreq: null,
+    maxFreq: null,
+    config: {}
+  });
+
+  useEffect(() => {
+    if (!cpu?.governor) return;
+    setDraft({
+      governor: cpu?.governor,
+      minFreq: cpu?.minFreq,
+      maxFreq: cpu?.maxFreq,
+      config: { ...cpu[cpu?.governor] }
+    });
+  }, [cpu?.governor]);
+
+  const onSaveGovernor = () => {
+    dispatch({
+      type: "CHANGE_GOVERNOR",
+      payload: draft
+    })
+  }
 
   return (
     <div className="parent">
@@ -33,8 +58,8 @@ export default function Cpu() {
           {/* Dropdown  */}
           <p className="text-info">CPU Governor</p>
           <Dropdown
-            value={governor}
-            onChange={setGovernor}
+            value={draft?.governor}
+            onChange={(e) => setDraft((prev) => ({ ...prev, governor: e }))}
             options={['Performance', 'Powersave', 'Ondemand', 'Conservative', 'Schedutil', 'Userspace']}
             width="w-48"
           />
@@ -42,7 +67,7 @@ export default function Cpu() {
         <div className='flex-1 flex flex-col lg:flex-row lg:justify-between lg:items-center'>
 
           {/* Button Change */}
-          <button style={{ color: 'white' }} className='btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4'>
+          <button onClick={onSaveGovernor} style={{ color: 'white' }} className='btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4'>
             CHANGE
           </button>
 
@@ -52,14 +77,14 @@ export default function Cpu() {
               Governor Mode Active
             </p>
             <p className="text-xl font-semibold text-green-700">
-              Performance
+              {cpu?.governor}
             </p>
           </div>
         </div>
       </div>
 
       {/* Performance  */}
-      {governor == "Performance" && <div>
+      {draft.governor == "Performance" && <div>
         <div className="card flex flex-col gap-5">
           {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
@@ -73,23 +98,25 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
+                disabled={cpu?.governor != "Performance"}
                 unit="GHz"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft.maxFreq}
+                onChange={(e) => setDraft((prev) => ({
+                  ...prev,
+                  maxFreq: e.target.value
+                }))}
                 placeholder="Input frequency"
               />
               <p className="text-warning">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
           </div>
           {/* Button  */}
-          <button className="btn-primary text-white w-full lg:w-32">
-            <p className="text-info">SAVE</p>
-          </button>
+          <ButtonSave disabled={cpu?.governor != "Performance"} onClick={onSaveGovernor} />
         </div>
       </div>}
 
       {/* Powersave  */}
-      {governor == "Powersave" && <div>
+      {draft.governor == "Powersave" && <div>
         <div className="card flex flex-col gap-5">
           {/* Label  */}
           <p className="text-info" style={{ fontWeight: 'bold' }}>
@@ -103,23 +130,25 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
+                disabled={cpu?.governor != "Powersave"}
                 unit="GHz"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft.minFreq}
+                onChange={(e) => setDraft((prev) => ({
+                  ...prev,
+                  minFreq: e.target.value
+                }))}
                 placeholder="Input frequency"
               />
               <p className="text-warning">*Available Minimum Frequency: 1.8 GHz</p>
             </div>
           </div>
           {/* Button  */}
-          <button className="btn-primary text-white w-full lg:w-32">
-            <p className="text-info">SAVE</p>
-          </button>
+          <ButtonSave disabled={cpu?.governor != "Powersave"} onClick={onSaveGovernor} />
         </div>
       </div>}
 
       {/* Ondemand  */}
-      {governor == "Ondemand" && <div>
+      {draft.governor == "Ondemand" && <div>
         <div className="card flex flex-col gap-5">
 
           {/* Label  */}
@@ -134,10 +163,11 @@ export default function Cpu() {
             </div>
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
+                disabled={cpu?.governor != "Ondemand"}
                 type="number"
                 unit="GHz"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft.maxFreq}
+                onChange={(e) => setDraft((prev) => ({ ...prev, maxFreq: e.target.value }))}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -151,10 +181,11 @@ export default function Cpu() {
             </div>
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
+                disabled={cpu?.governor != "Ondemand"}
                 type="number"
                 unit="GHz"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft.minFreq}
+                onChange={(e) => setDraft((prev) => ({ ...prev, minFreq: e.target.value }))}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -169,11 +200,29 @@ export default function Cpu() {
             <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
               <div className='flex items-center gap-8'>
                 <p className="text-info">Up</p>
-                <InputWithUnit type="number" placeholder="Up Threshold" unit="%" />
+                <InputWithUnit disabled={cpu?.governor != "Ondemand"} type="number" placeholder="Up Threshold" unit="%" value={draft?.config?.thresholdUp}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        thresholdUp: Number(e.target.value),
+                      },
+                    }))
+                  } />
               </div>
               <div className='flex items-center gap-6'>
                 <p className="text-info">Down</p>
-                <InputWithUnit type="number" placeholder="Down Threshold" unit="%" />
+                <InputWithUnit disabled={cpu?.governor != "Ondemand"} type="number" placeholder="Down Threshold" unit="%" value={draft?.config?.thresholdDown}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        thresholdDown: Number(e.target.value),
+                      },
+                    }))
+                  } />
               </div>
             </div>
           </div>
@@ -185,10 +234,19 @@ export default function Cpu() {
             </div>
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
+                disabled={cpu?.governor != "Ondemand"}
                 type="number"
                 unit="ms"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft?.config?.samplingRate || null}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      samplingRate: Number(e.target.value),
+                    },
+                  }))
+                }
                 placeholder="Input samping rate"
               />
             </div>
@@ -201,10 +259,19 @@ export default function Cpu() {
             </div>
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
+                disabled={cpu?.governor != "Ondemand"}
                 type="number"
                 unit="ms"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft?.config?.samplingDownFactor || null}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      samplingDownFactor: Number(e.target.value),
+                    },
+                  }))
+                }
                 placeholder="Input samping down factor"
               />
             </div>
@@ -218,15 +285,33 @@ export default function Cpu() {
             <div className="w-[70%] flex gap-12">
               <div className='flex items-center gap-8'>
                 <Checkbox
-                  checked={ignoreNiceLoad}
-                  onChange={setIgnoreNiceLoad}
+                  disabled={cpu?.governor != "Ondemand"}
+                  checked={draft?.config?.isIgnoreNice || false}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        isIgnoreNice: !prev.config.isIgnoreNice,
+                      },
+                    }))
+                  }
                 />
               </div>
               <div className='flex items-center gap-6'>
                 <p className="text-info">I/O Busy</p>
                 <Checkbox
-                  checked={IOBusy}
-                  onChange={setIOBusy}
+                  disabled={cpu?.governor != "Ondemand"}
+                  checked={draft?.config?.isIoBusy || false}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        isIoBusy: !prev.config.isIoBusy,
+                      },
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -239,23 +324,30 @@ export default function Cpu() {
             </div>
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
+                disabled={cpu?.governor != "Ondemand"}
                 type="number"
                 unit="%"
-                // value={temp}
-                // onChange={(e) => setTemp(e.target.value)}
+                value={draft?.config?.powerBias || null}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    config: {
+                      ...prev.config,
+                      powerBias: Number(e.target.value),
+                    },
+                  }))
+                }
                 placeholder="Input power bias"
               />
             </div>
           </div>
 
-          <button className="btn-primary text-white w-full lg:w-32">
-            <p className="text-info">SAVE</p>
-          </button>
+          <ButtonSave disabled={cpu?.governor != "Ondemand"} onClick={onSaveGovernor} />
         </div>
       </div>}
 
       {/* Conservative  */}
-      {governor == "Conservative" && <div>
+      {draft.governor == "Conservative" && <div>
         <div className="card flex flex-col gap-5">
 
           {/* Label  */}
@@ -354,8 +446,8 @@ export default function Cpu() {
             <div className="w-[70%] flex gap-12">
               <div className='flex items-center gap-8'>
                 <Checkbox
-                  checked={ignoreNiceLoad}
-                  onChange={setIgnoreNiceLoad}
+                  checked={configGovernor.isIgnoreNice}
+                  onChange={() => setConfigGovernor((prev) => ({ ...prev, isIgnoreNice: !prev.isIgnoreNice }))}
                 />
               </div>
             </div>
@@ -384,7 +476,7 @@ export default function Cpu() {
       </div>}
 
       {/* Schedutil  */}
-      {governor == "Schedutil" && <div>
+      {draft.governor == "Schedutil" && <div>
         <div className="card flex flex-col gap-5">
 
           {/* Label  */}
@@ -449,7 +541,7 @@ export default function Cpu() {
       </div>}
 
       {/* Userspace  */}
-      {governor == "Userspace" && <div>
+      {draft.governor == "Userspace" && <div>
         <div className="card flex flex-col gap-5">
 
           {/* Label  */}
@@ -510,8 +602,8 @@ export default function Cpu() {
           <div>
             <div className='flex gap-2 items-center' >
               <Checkbox
-                checked={dynamic}
-                onChange={setDynamic}
+                checked={configGovernor.isDynamicScripting}
+                onChange={() => setConfigGovernor((prev) => ({ ...prev, isDynamicScripting: !prev.isDynamicScripting }))}
               />
               <p className='text-info'>Dynamic Scripting</p>
             </div>
@@ -519,7 +611,7 @@ export default function Cpu() {
             <div className='flex flex-col lg:flex-row gap-4 pt-4'>
               <div className='flex-1'>
                 <ScriptEditor
-                  disabled={!dynamic}
+                  disabled={!configGovernor.isDynamicScripting}
                   value={script}
                   onChange={setScript}
                   onSave={() => {
