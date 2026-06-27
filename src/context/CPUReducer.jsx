@@ -1,34 +1,48 @@
 export const initialState = {
-    governor: "",
-    minFreq: 600000,
-    maxFreq: 1800000,
+    governor: "Performance",
+
+    performance: {
+        maxFreq: 1800000,
+    },
+
+    powersave: {
+        minFreq: 600000,
+    },
 
     ondemand: {
+        maxFreq: 1800000,
+        minFreq: 600000,
         thresholdUp: null,
         thresholdDown: null,
         samplingRate: null,
         samplingDownFactor: null,
-        isIgnoreNice: true,
-        isIoBusy: true,
+        isIgnoreNice: false,
+        isIoBusy: false,
         powerBias: null,
     },
 
     conservative: {
+        maxFreq: 1800000,
+        minFreq: 600000,
         thresholdUp: null,
         thresholdDown: null,
         samplingRate: null,
         samplingDownFactor: null,
-        isIgnoreNice: 0,
+        isIgnoreNice: false,
         frequencyStep: null,
     },
 
     schedutil: {
+        maxFreq: 1800000,
+        minFreq: 600000,
         rateLimit: null,
     },
 
     userspace: {
+        maxFreq: 1800000,
+        minFreq: 600000,
         fixedFrequency: null,
-        isDynamicScripting: 0,
+        isDynamicScripting: false,
         script: "",
     },
 };
@@ -36,28 +50,25 @@ export const initialState = {
 export function cpuReducer(state, action) {
     switch (action.type) {
 
-        case "CHANGE_GOVERNOR":
-
+        case "SAVE_GOVERNOR_CONFIG":
             return {
                 ...state,
-
-                governor: action.payload.governor,
-
-                minFreq: action.payload.minFreq,
-
-                maxFreq: action.payload.maxFreq,
-
                 [action.payload.governor]: {
-                    ...action.payload.config
-                }
-            }
+                    ...state[action.payload.governor],
+                    ...action.payload.config,
+                },
+            };
+
+        case "CHANGE_GOVERNOR":
+            return {
+                ...state,
+                governor: action.payload,
+            };
 
         case "RESET":
-
             return initialState;
 
         default:
-
             return state;
     }
 }
