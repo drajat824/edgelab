@@ -218,7 +218,7 @@ export default function Cpu() {
         <div className='flex-1 flex flex-col lg:flex-row lg:justify-between lg:items-center'>
 
           {/* Button Change */}
-          <button onClick={onChangeGovernor} style={{ color: 'white' }} className='btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4'>
+          <button onClick={onChangeGovernor} disabled={governor === originalDraft?.governor} style={{ color: 'white', cursor: governor === originalDraft?.governor ? "not-allowed" : "pointer" }} className="btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4 disabled:bg-gray-400 disabled:text-gray-600">
             CHANGE
           </button>
 
