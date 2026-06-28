@@ -5,16 +5,16 @@ export const initialState = {
     core: [0, 1, 2, 3],
 
     performance: {
-        maxFreq: 1800000,
+        maxFreq: 1.8,
     },
 
     powersave: {
-        minFreq: 600000,
+        minFreq: 0.6,
     },
 
     ondemand: {
-        maxFreq: 1800000,
-        minFreq: 600000,
+        maxFreq: 1.8,
+        minFreq: 0.6,
         thresholdUp: null,
         thresholdDown: null,
         samplingRate: null,
@@ -25,8 +25,8 @@ export const initialState = {
     },
 
     conservative: {
-        maxFreq: 1800000,
-        minFreq: 600000,
+        maxFreq: 1.8,
+        minFreq: 0.6,
         thresholdUp: null,
         thresholdDown: null,
         samplingRate: null,
@@ -36,14 +36,14 @@ export const initialState = {
     },
 
     schedutil: {
-        maxFreq: 1800000,
-        minFreq: 600000,
+        maxFreq: 1.8,
+        minFreq: 0.6,
         rateLimit: null,
     },
 
     userspace: {
-        maxFreq: 1800000,
-        minFreq: 600000,
+        maxFreq: 1.8,
+        minFreq: 0.6,
         fixedFrequency: null,
         isDynamicScripting: false,
         script: "",
