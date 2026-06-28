@@ -13,46 +13,36 @@ import { generateCommandFunction } from "../utils/generateCommand"
 import useCPU from "../hooks/useCPU"
 
 export default function Cpu() {
-
   const { cpu, dispatch } = useCPU();
 
-  // Governor yang dipilih
-  const [governor, setGovernor] = useState(cpu.governor);
-
-  // Data yang sedang diedit
+  // Governor & Data Draft
+  const [governor, setGovernor] = useState(cpu?.governor);
   const [draft, setDraft] = useState({});
-  const [threadDraft, setThreadDraft] = useState(cpu.thread);
-  const [coreDraft, setCoreDraft] = useState(cpu.core);
+  const [threadDraft, setThreadDraft] = useState(cpu?.thread);
+  const [coreDraft, setCoreDraft] = useState(cpu?.core);
 
-  // Data asli sebagai pembanding
+  // Data asli & Status Perubahan
   const [originalDraft, setOriginalDraft] = useState({});
-
-  // Status perubahan setiap field
   const [status, setStatus] = useState({});
 
   // Script/log command
   const [log, setLog] = useState("");
   const [log2, setLog2] = useState("");
-
-  // Script - Userspace
   const [script, setScript] = useState("");
 
   /**
    * Membandingkan original dengan draft
-   * Menghasilkan object boolean untuk setiap field yang berubah
    */
-  function getChangedFields(original, draft) {
+  function getChangedFields(original, currentDraft) {
     const changed = {
       governor: original.governor !== governor,
     };
 
-    Object.entries(draft).forEach(([key, value]) => {
-      if (key === "governor") return;
-      if (typeof value !== "object" || value === null) return;
+    Object.entries(currentDraft).forEach(([key, value]) => {
+      if (key === "governor" || typeof value !== "object" || value === null) return;
 
       changed[key] = {};
       Object.keys(value).forEach((field) => {
-        // Tambahkan optional chaining (?.) untuk menghindari crash jika original[key] belum ada
         changed[key][field] = original[key]?.[field] !== value[field];
       });
     });
@@ -62,27 +52,25 @@ export default function Cpu() {
 
   /**
    * Mengambil data CPU dari Context
-   * Simpan sebagai original dan draft
+   * Memanfaatkan teknik kloning yang lebih dinamis agar tidak hardcode nama governor
    */
   useEffect(() => {
     if (!cpu) return;
 
-    const clone = {
-      governor: structuredClone(cpu.governor),
-      performance: structuredClone(cpu.performance),
-      conservative: structuredClone(cpu.conservative),
-      powersave: structuredClone(cpu.powersave),
-      ondemand: structuredClone(cpu.ondemand),
-      schedutil: structuredClone(cpu.schedutil),
-      userspace: structuredClone(cpu.userspace),
-    };
+    // List governor yang di-track secara dinamis
+    const governors = ['governor', 'performance', 'conservative', 'powersave', 'ondemand', 'schedutil', 'userspace'];
+    const clone = {};
+
+    governors.forEach(gov => {
+      if (cpu[gov] !== undefined) clone[gov] = structuredClone(cpu[gov]);
+    });
 
     setDraft(clone);
     setOriginalDraft(clone);
   }, [cpu]);
 
   /**
-   * Hitung perubahan setiap kali draft berubah
+   * Hitung perubahan setiap kali draft atau governor berubah
    */
   useEffect(() => {
     if (!Object.keys(originalDraft).length) return;
@@ -91,118 +79,59 @@ export default function Cpu() {
 
   /**
    * Status tombol Save.
-   * true = ada perubahan
-   * false = tidak ada perubahan
-   *
-   * Tidak perlu disimpan ke state karena selalu
-   * bisa dihitung dari status.
    */
   const disabledButton = useMemo(() => {
     return Object.fromEntries(
       Object.entries(status).map(([key, value]) => {
-        if (typeof value === "boolean") {
-          return [key, value];
-        }
+        if (typeof value === "boolean") return [key, value];
 
-        // Ada perubahan?
         const hasChanged = Object.values(value).some(Boolean);
+        const hasEmpty = Object.values(draft[key] ?? {}).some(v => v === "");
 
-        // Ada field kosong?
-        const hasEmpty = Object.entries(draft[key] ?? {}).some(
-          ([_, v]) => v === ""
-        );
-
+        // Menyederhanakan penamaan agar sesuai logika (true berarti tombol AKTIF / bisa diklik)
         return [key, hasChanged && !hasEmpty];
       })
     );
   }, [status, draft]);
 
   /**
-   * Simpan konfigurasi governor
+   * Helper fungsi untuk membungkus pembuatan log command & dispatch
    */
-  const onSaveGovernor = () => {
+  const handleSaveAction = (actionType, payload, customStatus, targetDraft, isLog2 = false) => {
     const command = generateCommandFunction({
-      status,
-      draft,
+      status: { ...status, ...customStatus },
+      ...(targetDraft.threadDraft && { threadDraft: targetDraft.threadDraft }),
+      ...(targetDraft.coreDraft && { coreDraft: targetDraft.coreDraft }),
+      ...(targetDraft.draft && { draft: targetDraft.draft }),
     });
 
-    setLog(command);
+    if (isLog2) setLog2(command); else setLog(command);
+    dispatch({ type: actionType, payload });
+  };
 
-    dispatch({
-      type: "SAVE_GOVERNOR_CONFIG",
-      payload: {
-        governor,
-        config: draft,
-      },
-    });
+  // --- REFACTOR ACTION FUNCTIONS ---
+
+  const onSaveGovernor = () => {
+    handleSaveAction("SAVE_GOVERNOR_CONFIG", { governor, config: draft }, {}, { draft });
   };
 
   const onSaveThread = () => {
-    const newStatus = {
-      ...status,
-      thread: true,
-    };
-
-    const command = generateCommandFunction({
-      status: newStatus,
-      threadDraft
-    });
-
-    setLog2(command);
-
-    dispatch({
-      type: "CHANGE_THREAD",
-      payload: threadDraft,
-    });
-
-  }
-
-  const onSaveCore = () => {
-    const newStatus = {
-      ...status,
-      core: true,
-    };
-
-    const command = generateCommandFunction({
-      status: newStatus,
-      coreDraft
-    });
-
-    setLog2(command);
-
-    dispatch({
-      type: "CHANGE_CORE",
-      payload: coreDraft
-    });
+    handleSaveAction("CHANGE_THREAD", threadDraft, { thread: true }, { threadDraft }, true);
   };
 
-  /**
-   * Ganti governor
-   */
+  const onSaveCore = () => {
+    handleSaveAction("CHANGE_CORE", coreDraft, { core: true }, { coreDraft }, true);
+  };
+
   const onChangeGovernor = () => {
     if (governor !== originalDraft.governor) {
-      const newStatus = {
-        ...status,
-        governor: true,
-      };
-
-      const newDraft = {
-        ...draft,
-        governor,
-      };
-
       const command = generateCommandFunction({
-        status: newStatus,
-        draft: newDraft,
+        status: { ...status, governor: true },
+        draft: { ...draft, governor },
       });
-
       setLog(command);
     }
-
-    dispatch({
-      type: "CHANGE_GOVERNOR",
-      payload: governor,
-    });
+    dispatch({ type: "CHANGE_GOVERNOR", payload: governor });
   };
 
   return (
