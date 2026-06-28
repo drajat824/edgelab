@@ -31,7 +31,7 @@ export default function Dropdown({
                 onClick={() => setOpen(!open)}
                 disabled={disabled}
                 className="flex justify-between items-center gap-4 rounded-lg card-dorpdown cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed h-[45px]">
-                <span>{value || "Select..."}</span>
+                <span className="uppercase">{value || "Select..."}</span>
                 <img src={DropdownIcon} alt="Dropdown" className={`w-4 h-3 ${open ? 'rotate-180' : ''}`} />
             </button>
 
@@ -46,7 +46,7 @@ export default function Dropdown({
                                 setOpen(false)
                             }}
                             disabled={disabled}
-                            className="w-full text-left px-4 py-2 hover:bg-[var(--menu)] hover:text-white transition cursor-pointer disabled:opacity-50"
+                            className="w-full text-left px-4 py-2 hover:bg-[var(--menu)] hover:text-white transition cursor-pointer disabled:opacity-50 uppercase"
                         >
                             {opt}
                         </button>
