@@ -46,7 +46,7 @@ export const initialState = {
         minFreq: 0.6,
         fixedFrequency: 1.8,
         isDynamicScripting: false,
-        script: "tes",
+        script: "",
     }
 }
 

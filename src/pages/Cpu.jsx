@@ -28,7 +28,7 @@ export default function Cpu() {
   // Script/log command
   const [log, setLog] = useState("");
   const [log2, setLog2] = useState("");
-  const [script, setScript] = useState("");
+  const [script, setScript] = useState(cpu?.userspace?.script);
 
   /**
    * Membandingkan original dengan draft
@@ -1123,12 +1123,20 @@ export default function Cpu() {
             <div className='flex flex-col lg:flex-row gap-4 pt-4'>
               <div className='flex-1'>
                 <ScriptEditor
-                  disabled={!draft?.userspace?.isDynamicScripting ?? true | cpu?.governor != "userspace"}
+                  disabled={!draft?.userspace?.isDynamicScripting | cpu?.governor != "userspace"}
                   value={script}
                   onChange={setScript}
-                  onSave={() => {
-                    console.log(script);
-                  }}
+                  isDirty={script !== draft?.userspace?.script}
+                  onSave={(e) => {
+                    setDraft(prev => ({
+                      ...prev,
+                      userspace: {
+                        ...prev.userspace,
+                        script: e
+                      }
+                    }))
+                  }
+                  }
                 />
               </div>
               <div className='flex-1'>
@@ -1207,7 +1215,9 @@ export default function Cpu() {
             </div>
           </div>
         </div>
+
         <Log value={log2} />
+
       </div>
     </div>
   )
