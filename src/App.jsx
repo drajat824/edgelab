@@ -4,11 +4,13 @@ import './App.css';
 
 export default function App() {
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex w-full h-fit bg-[var(--bg)]">
       <Sidebar />
-      <main className="flex-1 p-6 bg-[var(--bg)]">
+      <main className="flex-1 pt-6 h-full">
         <Outlet />
       </main>
     </div>
   );
 }
+
+// bg-[var(--bg)]
