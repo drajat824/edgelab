@@ -52,7 +52,7 @@ export const initialState = {
 
 export function cpuReducer(state, action) {
     switch (action.type) {
-        case "SAVE_GOVERNOR_CONFIG":
+        case "CHANGE_GOVERNOR_CONFIG":
             return {
                 ...state,
                 [action.payload.governor]:
@@ -65,13 +65,13 @@ export function cpuReducer(state, action) {
                 governor: action.payload,
             };
 
-        case "CHANGE_THREAD":
+        case "CHANGE_THREAD_CONFIG":
             return {
                 ...state,
                 thread: action.payload,
             };
 
-        case "CHANGE_CORE":
+        case "CHANGE_CORE_CONFIG":
             return {
                 ...state,
                 core: action.payload,

@@ -112,15 +112,15 @@ export default function Cpu() {
   // --- REFACTOR ACTION FUNCTIONS ---
 
   const onSaveGovernor = () => {
-    handleSaveAction("SAVE_GOVERNOR_CONFIG", { governor, config: draft }, {}, { draft });
+    handleSaveAction("CHANGE_GOVERNOR_CONFIG", { governor, config: draft }, {}, { draft });
   };
 
   const onSaveThread = () => {
-    handleSaveAction("CHANGE_THREAD", threadDraft, { thread: true }, { threadDraft }, true);
+    handleSaveAction("CHANGE_THREAD_CONFIG", threadDraft, { thread: true }, { threadDraft }, true);
   };
 
   const onSaveCore = () => {
-    handleSaveAction("CHANGE_CORE", coreDraft, { core: true }, { coreDraft }, true);
+    handleSaveAction("CHANGE_CORE_CONFIG", coreDraft, { core: true }, { coreDraft }, true);
   };
 
   const onChangeGovernor = () => {
