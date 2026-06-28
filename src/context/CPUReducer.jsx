@@ -1,6 +1,9 @@
 export const initialState = {
     governor: "performance",
 
+    thread: 4,
+    core: [0, 1, 2, 3],
+
     performance: {
         maxFreq: 1800000,
     },
@@ -60,6 +63,18 @@ export function cpuReducer(state, action) {
             return {
                 ...state,
                 governor: action.payload,
+            };
+
+        case "CHANGE_THREAD":
+            return {
+                ...state,
+                thread: action.payload,
+            };
+
+        case "CHANGE_CORE":
+            return {
+                ...state,
+                core: action.payload,
             };
 
         case "RESET":

@@ -21,7 +21,6 @@ export default function Cpu() {
 
   // Data yang sedang diedit
   const [draft, setDraft] = useState({});
-  console.log(draft)
 
   // Data asli sebagai pembanding
   const [originalDraft, setOriginalDraft] = useState({});
@@ -31,6 +30,10 @@ export default function Cpu() {
 
   // Script/log command
   const [log, setLog] = useState("");
+
+  // Script/log 2 (AFFINITY) command
+  const [log2, setLog2] = useState("");
+  console.log(log2)
 
   // Script - Userspace
   const [script, setScript] = useState("")
@@ -42,26 +45,24 @@ export default function Cpu() {
   function getChangedFields(original, draft) {
     const changed = {
       governor: original.governor !== governor,
+      // Gunakan Number() untuk mengamankan perbandingan tipe data jika original.thread adalah Number
+      thread: Number(original.thread) !== Number(draft.thread),
+      core: JSON.stringify(original.core) !== JSON.stringify(draft.core)
     };
 
     Object.entries(draft).forEach(([key, value]) => {
-      // governor sudah dicek di atas
-      if (key === "governor") return;
-
-      // hanya proses object
+      if (key === "governor" || key === "thread" || key === "core") return;
       if (typeof value !== "object" || value === null) return;
 
       changed[key] = {};
-
       Object.keys(value).forEach((field) => {
-        changed[key][field] =
-          original[key][field] !== value[field];
+        // Tambahkan optional chaining (?.) untuk menghindari crash jika original[key] belum ada
+        changed[key][field] = original[key]?.[field] !== value[field];
       });
     });
 
     return changed;
   }
-
   /**
    * Mengambil data CPU dari Context
    * Simpan sebagai original dan draft
@@ -120,6 +121,44 @@ export default function Cpu() {
         governor,
         config: draft,
       },
+    });
+  };
+
+  const onChangeThread = () => {
+    const newStatus = {
+      ...status,
+      thread: true,
+    };
+
+    const command = generateCommandFunction({
+      status: newStatus,
+      draft,
+    });
+
+    setLog2(command);
+
+    dispatch({
+      type: "CHANGE_THREAD",
+      payload: draft?.thread,
+    });
+  }
+
+  const onChangeCore = () => {
+    const newStatus = {
+      ...status,
+      core: true,
+    };
+
+    const command = generateCommandFunction({
+      status: newStatus,
+      draft,
+    });
+
+    setLog2(command);
+
+    dispatch({
+      type: "CHANGE_CORE",
+      payload: draft?.core ?? [],
     });
   };
 
@@ -901,14 +940,20 @@ export default function Cpu() {
               <div>
                 <InputWithUnit
                   type="number"
-                  // value={temp}
-                  // onChange={(e) => setTemp(e.target.value)}
+                  value={draft?.thread ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericValue = val === "" ? "" : Number(val);
+
+                    setDraft(prev => ({
+                      ...prev,
+                      thread: numericValue
+                    }));
+                  }}
                   placeholder="Input thread"
                 />
               </div>
-              <button className="btn-primary text-white w-full lg:w-32">
-                <p className="text-info">SAVE</p>
-              </button>
+              <ButtonSave disabled={!disabledButton?.thread || draft?.thread == ""} onClick={onChangeThread} />
             </div>
           </div>
 
@@ -917,24 +962,28 @@ export default function Cpu() {
               <p className="text-info" style={{ fontWeight: "bold" }}>Core Pinning</p>
               <div>
                 <RadioButton
-                  name="mode"
-                  // value={mode}
-                  // onChange={setMode}
+                  multiple
+                  name="cores"
+                  value={draft?.core}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      core: e,
+                    }))
+                  }
                   options={[
-                    { label: "Core 0", value: "0" },
-                    { label: "Core 1", value: "1" },
-                    { label: "Core 2", value: "2" },
-                    { label: "Core 3", value: "3" },
+                    { label: "Core 0", value: 0 },
+                    { label: "Core 1", value: 1 },
+                    { label: "Core 2", value: 2 },
+                    { label: "Core 3", value: 3 },
                   ]}
                 />
               </div>
-              <button className="btn-primary text-white w-full lg:w-32">
-                <p className="text-info">SAVE</p>
-              </button>
+              <ButtonSave disabled={!disabledButton?.core || draft?.core?.length == 0} onClick={onChangeCore} />
             </div>
           </div>
         </div>
-        <Log />
+        <Log value={log2} />
       </div>
     </div>
   )

@@ -6,7 +6,7 @@ export default function App() {
   return (
     <div className="flex w-full h-fit bg-[var(--bg)]">
       <Sidebar />
-      <main className="flex-1 pt-6 h-full">
+      <main className="flex-1 pt-6 h-full p-4">
         <Outlet />
       </main>
     </div>

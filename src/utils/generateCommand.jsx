@@ -145,6 +145,21 @@ function generateUserspace({ status, draft }) {
     return output;
 }
 
+function generateAffinity({ status, draft }) {
+    const output = [];
+
+    if (status?.core) {
+        output.push(`Core Pinning: taskset -c ${[draft?.core]} python3 script.py`)
+    }
+
+    if (status?.thread) {
+        output.push(`Threading: num_thread = ${draft?.thread}`)
+    }
+
+    return output
+}
+
+
 const generators = {
     performance: generatePerformance,
     powersave: generatePowersave,
@@ -155,6 +170,10 @@ const generators = {
 };
 
 export function generateCommandFunction({ status, draft }) {
+    if (status?.core || status?.thread) {
+        return generateAffinity({ status, draft })
+    }
+
     const generator = generators[draft?.governor];
     if (!generator) return [];
     return generator({ status, draft });
