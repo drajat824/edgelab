@@ -86,7 +86,12 @@ export default function Cpu() {
         if (typeof value === "boolean") return [key, value];
 
         const hasChanged = Object.values(value).some(Boolean);
-        const hasEmpty = Object.values(draft[key] ?? {}).some(v => v === "");
+        const hasEmpty = Object.entries(draft[key] ?? {}).some(([fieldKey, fieldValue]) => {
+          if (key === "userspace" && !draft.userspace?.isDynamicScripting && fieldKey === "script") {
+            return false;
+          }
+          return fieldValue === "";
+        });
 
         // Menyederhanakan penamaan agar sesuai logika (true berarti tombol AKTIF / bisa diklik)
         return [key, hasChanged && !hasEmpty];
@@ -1123,7 +1128,7 @@ export default function Cpu() {
             <div className='flex flex-col lg:flex-row gap-4 pt-4'>
               <div className='flex-1'>
                 <ScriptEditor
-                  disabled={!draft?.userspace?.isDynamicScripting | cpu?.governor != "userspace"}
+                  disabled={!draft?.userspace?.isDynamicScripting || cpu?.governor != "userspace"}
                   value={script}
                   onChange={setScript}
                   isDirty={script !== draft?.userspace?.script}
