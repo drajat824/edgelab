@@ -256,8 +256,8 @@ export default function Cpu() {
             Performance <span className="text-info">Mode Settings</span>
           </p>
           {/* Input */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 lg:items-center lg:justify-between pb-4">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
+            <div className="flex-none lg:pt-2">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -292,7 +292,11 @@ export default function Cpu() {
                   });
                 }}
               />
-              <p className="text-warning">*Available Maximum Frequency: 1.8 GHz</p>
+
+              <div>
+                <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
+
             </div>
           </div>
           {/* Button  */}
@@ -308,8 +312,8 @@ export default function Cpu() {
             Powersave <span className="text-info">Mode Settings</span>
           </p>
           {/* Input */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 lg:items-center lg:justify-between pb-4">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
+            <div className="flex-none lg:pt-2">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -343,7 +347,9 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning">*Available Minimum Frequency: 0.6 GHz</p>
+              <div>
+                <p className="text-warning">*Available Minimum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
             </div>
           </div>
           {/* Button  */}
@@ -361,8 +367,8 @@ export default function Cpu() {
           </p>
 
           {/* Max  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none lg:pt-2">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -396,12 +402,14 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <div>
+                <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
             </div>
           </div>
 
           {/* Min  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
             <div className="flex-none">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
@@ -436,69 +444,78 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <div>
+                <p className="text-warning">*Available Minimum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
             </div>
           </div>
 
           {/* Threshold  */}
-          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:justify-between mb-2">
+            <div className="flex-none pt-2">
               <p className="text-info">Threshold</p>
             </div>
             <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
-              <div className='flex items-center gap-6'>
-                <p className="text-info flex-1/4">Up</p>
-                <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Up Threshold" unit="%" value={draft?.ondemand?.thresholdUp ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      ondemand: {
-                        ...prev.ondemand,
-                        thresholdUp: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setDraft((prev) => {
-                      let value = Number(prev.ondemand.thresholdUp);
-                      if (prev.ondemand.thresholdUp === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
-                      return {
+              <div className='flex gap-6'>
+                <p className="text-info flex-1/4 pt-2">Up</p>
+                <div>
+                  <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Up Threshold" unit="%" value={draft?.ondemand?.thresholdUp ?? ""}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
                         ...prev,
                         ondemand: {
                           ...prev.ondemand,
-                          thresholdUp: value,
+                          thresholdUp: e.target.value,
                         },
-                      };
-                    });
-                  }} />
+                      }))
+                    }
+                    onBlur={() => {
+                      setDraft((prev) => {
+                        let value = Number(prev.ondemand.thresholdUp);
+                        if (prev.ondemand.thresholdUp === "") return prev;
+                        value = Math.min(100, Math.max(1, value));
+                        return {
+                          ...prev,
+                          ondemand: {
+                            ...prev.ondemand,
+                            thresholdUp: value,
+                          },
+                        };
+                      });
+                    }} />
+                  <p className="text-warning">*Available: 1 - 100%</p>
+                </div>
               </div>
-              <div className='flex items-center gap-6'>
-                <p className="text-info flex-1/4">Down</p>
-                <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Down Threshold" unit="%" value={draft?.ondemand?.thresholdDown ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      ondemand: {
-                        ...prev.ondemand,
-                        thresholdDown: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setDraft((prev) => {
-                      let value = Number(prev.ondemand.thresholdDown);
-                      if (prev.ondemand.thresholdDown === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
-                      return {
+
+              <div className='flex gap-6'>
+                <p className="text-info pt-2 flex-1/4">Down</p>
+                <div>
+                  <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Down Threshold" unit="%" value={draft?.ondemand?.thresholdDown ?? ""}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
                         ...prev,
                         ondemand: {
                           ...prev.ondemand,
-                          thresholdDown: value,
+                          thresholdDown: e.target.value,
                         },
-                      };
-                    });
-                  }} />
+                      }))
+                    }
+                    onBlur={() => {
+                      setDraft((prev) => {
+                        let value = Number(prev.ondemand.thresholdDown);
+                        if (prev.ondemand.thresholdDown === "") return prev;
+                        value = Math.min(100, Math.max(1, value));
+                        return {
+                          ...prev,
+                          ondemand: {
+                            ...prev.ondemand,
+                            thresholdDown: value,
+                          },
+                        };
+                      });
+                    }} />
+                  <p className="text-warning">*Available: 1 - 100%</p>
+                </div>
               </div>
             </div>
           </div>
@@ -594,8 +611,8 @@ export default function Cpu() {
           </div>
 
           {/* Power Bias  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+            <div className="flex-none pt-2">
               <p className="text-info">Power Bias</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -629,6 +646,7 @@ export default function Cpu() {
                 }}
                 placeholder="Input power bias"
               />
+              <p className="text-warning">*Available: 1 - 100%</p>
             </div>
           </div>
 
@@ -646,8 +664,8 @@ export default function Cpu() {
           </p>
 
           {/* Max  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -681,13 +699,15 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <div>
+                <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
             </div>
           </div>
 
           {/* Min  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -720,71 +740,79 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <div>
+                <p className="text-warning">*Available Minimum Frequency: 0.6 - 1.8 GHz</p>
+              </div>
             </div>
           </div>
 
           {/* Threshold  */}
-          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:justify-between mb-2">
+            <div className="flex-none pt-2">
               <p className="text-info">Threshold</p>
             </div>
             <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
-              <div className='flex items-center gap-6'>
-                <p className="text-info flex-1/4">Up</p>
-                <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdUp ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        thresholdUp: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setDraft((prev) => {
-                      let value = Number(prev.conservative.thresholdUp);
-                      if (prev.conservative.thresholdUp === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
-                      return {
+              <div className='flex gap-6'>
+                <p className="text-info pt-2 flex-1/4">Up</p>
+                <div>
+                  <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdUp ?? ""}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
                         ...prev,
                         conservative: {
                           ...prev.conservative,
-                          thresholdUp: value,
+                          thresholdUp: e.target.value,
                         },
-                      };
-                    });
-                  }}
-                  placeholder="Up Threshold" unit="%" />
+                      }))
+                    }
+                    onBlur={() => {
+                      setDraft((prev) => {
+                        let value = Number(prev.conservative.thresholdUp);
+                        if (prev.conservative.thresholdUp === "") return prev;
+                        value = Math.min(100, Math.max(1, value));
+                        return {
+                          ...prev,
+                          conservative: {
+                            ...prev.conservative,
+                            thresholdUp: value,
+                          },
+                        };
+                      });
+                    }}
+                    placeholder="Up Threshold" unit="%" />
+                  <p className="text-warning">*Available: 1 - 100%</p>
+                </div>
               </div>
-              <div className='flex items-center gap-6'>
-                <p className="text-info flex-1/4">Down</p>
-                <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdDown ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        thresholdDown: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setDraft((prev) => {
-                      let value = Number(prev.conservative.thresholdDown);
-                      if (prev.conservative.thresholdDown === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
-                      return {
+              <div className='flex gap-6'>
+                <p className="text-info flex-1/4 pt-2">Down</p>
+                <div>
+                  <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdDown ?? ""}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
                         ...prev,
                         conservative: {
                           ...prev.conservative,
-                          thresholdDown: value,
+                          thresholdDown: e.target.value,
                         },
-                      };
-                    });
-                  }}
-                  placeholder="Down Threshold" unit="%" />
+                      }))
+                    }
+                    onBlur={() => {
+                      setDraft((prev) => {
+                        let value = Number(prev.conservative.thresholdDown);
+                        if (prev.conservative.thresholdDown === "") return prev;
+                        value = Math.min(100, Math.max(1, value));
+                        return {
+                          ...prev,
+                          conservative: {
+                            ...prev.conservative,
+                            thresholdDown: value,
+                          },
+                        };
+                      });
+                    }}
+                    placeholder="Down Threshold" unit="%" />
+                  <p className="text-warning">*Available: 1 - 100%</p>
+                </div>
               </div>
             </div>
           </div>
@@ -861,8 +889,8 @@ export default function Cpu() {
           </div>
 
           {/* Frequency Step  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+            <div className="flex-none pt-2">
               <p className="text-info">Frequency Step</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -895,6 +923,7 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency step"
               />
+              <p className="text-warning">*Available: 1 - 100%</p>
             </div>
           </div>
 
@@ -912,8 +941,8 @@ export default function Cpu() {
           </p>
 
           {/* Max  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -947,13 +976,13 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
             </div>
           </div>
 
           {/* Min  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -987,7 +1016,7 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
+              <p className="text-warning">*Available Minimum Frequency: 0.6 - 1.8 GHz</p>
             </div>
           </div>
 
@@ -1029,8 +1058,8 @@ export default function Cpu() {
           </p>
 
           {/* Max  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Maximum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -1063,13 +1092,13 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
             </div>
           </div>
 
           {/* Min  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between mb-5">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            <div className="flex-none pt-2">
               <p className="text-info">Scalling Minimum Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -1102,13 +1131,13 @@ export default function Cpu() {
                 }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Minimum Frequency: 0.66 GHz</p>
+              <p className="text-warning">*Available Minimum Frequency: 0.6 - 1.8 GHz</p>
             </div>
           </div>
 
           {/* Fixed Frequency  */}
-          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-            <div className="flex-none">
+          <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+            <div className="flex-none pt-2">
               <p className="text-info">Fixed Frequency</p>
             </div>
             <div className="w-full lg:w-[70%]">
@@ -1141,6 +1170,7 @@ export default function Cpu() {
                 }}
                 placeholder="Input fixed frequency"
               />
+              <p className="text-warning">*Available Frequency: 0.6 - 1.8 GHz</p>
             </div>
           </div>
 
@@ -1219,6 +1249,7 @@ export default function Cpu() {
                   placeholder="Input thread"
                 />
               </div>
+              {/* <p>asd</p> */}
               <ButtonSave disabled={cpu?.thread === threadDraft || threadDraft == ""} onClick={onSaveThread} />
             </div>
           </div>
