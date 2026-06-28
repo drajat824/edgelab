@@ -21,22 +21,22 @@ export default function Cpu() {
 
   // Data yang sedang diedit
   const [draft, setDraft] = useState({});
+  const [threadDraft, setThreadDraft] = useState(cpu.thread);
+  const [coreDraft, setCoreDraft] = useState(cpu.core);
 
   // Data asli sebagai pembanding
   const [originalDraft, setOriginalDraft] = useState({});
 
   // Status perubahan setiap field
   const [status, setStatus] = useState({});
+  console.log(status)
 
   // Script/log command
   const [log, setLog] = useState("");
-
-  // Script/log 2 (AFFINITY) command
   const [log2, setLog2] = useState("");
-  console.log(log2)
 
   // Script - Userspace
-  const [script, setScript] = useState("")
+  const [script, setScript] = useState("");
 
   /**
    * Membandingkan original dengan draft
@@ -45,13 +45,10 @@ export default function Cpu() {
   function getChangedFields(original, draft) {
     const changed = {
       governor: original.governor !== governor,
-      // Gunakan Number() untuk mengamankan perbandingan tipe data jika original.thread adalah Number
-      thread: Number(original.thread) !== Number(draft.thread),
-      core: JSON.stringify(original.core) !== JSON.stringify(draft.core)
     };
 
     Object.entries(draft).forEach(([key, value]) => {
-      if (key === "governor" || key === "thread" || key === "core") return;
+      if (key === "governor") return;
       if (typeof value !== "object" || value === null) return;
 
       changed[key] = {};
@@ -63,6 +60,7 @@ export default function Cpu() {
 
     return changed;
   }
+  
   /**
    * Mengambil data CPU dari Context
    * Simpan sebagai original dan draft
@@ -70,7 +68,15 @@ export default function Cpu() {
   useEffect(() => {
     if (!cpu) return;
 
-    const clone = structuredClone(cpu);
+    const clone = {
+      governor: structuredClone(cpu.governor),
+      performance: structuredClone(cpu.performance),
+      conservative: structuredClone(cpu.conservative),
+      powersave: structuredClone(cpu.powersave),
+      ondemand: structuredClone(cpu.ondemand),
+      schedutil: structuredClone(cpu.schedutil),
+      userspace: structuredClone(cpu.userspace),
+    };
 
     setDraft(clone);
     setOriginalDraft(clone);
@@ -81,7 +87,6 @@ export default function Cpu() {
    */
   useEffect(() => {
     if (!Object.keys(originalDraft).length) return;
-
     setStatus(getChangedFields(originalDraft, draft));
   }, [draft, originalDraft, governor]);
 
@@ -124,7 +129,7 @@ export default function Cpu() {
     });
   };
 
-  const onChangeThread = () => {
+  const onSaveThread = () => {
     const newStatus = {
       ...status,
       thread: true,
@@ -132,18 +137,19 @@ export default function Cpu() {
 
     const command = generateCommandFunction({
       status: newStatus,
-      draft,
+      threadDraft
     });
 
     setLog2(command);
 
     dispatch({
       type: "CHANGE_THREAD",
-      payload: draft?.thread,
+      payload: threadDraft,
     });
+
   }
 
-  const onChangeCore = () => {
+  const onSaveCore = () => {
     const newStatus = {
       ...status,
       core: true,
@@ -151,14 +157,14 @@ export default function Cpu() {
 
     const command = generateCommandFunction({
       status: newStatus,
-      draft,
+      coreDraft
     });
 
     setLog2(command);
 
     dispatch({
       type: "CHANGE_CORE",
-      payload: draft?.core ?? [],
+      payload: coreDraft
     });
   };
 
@@ -940,20 +946,16 @@ export default function Cpu() {
               <div>
                 <InputWithUnit
                   type="number"
-                  value={draft?.thread ?? ""}
+                  value={threadDraft}
                   onChange={(e) => {
                     const val = e.target.value;
                     const numericValue = val === "" ? "" : Number(val);
-
-                    setDraft(prev => ({
-                      ...prev,
-                      thread: numericValue
-                    }));
+                    setThreadDraft(numericValue)
                   }}
                   placeholder="Input thread"
                 />
               </div>
-              <ButtonSave disabled={!disabledButton?.thread || draft?.thread == ""} onClick={onChangeThread} />
+              <ButtonSave disabled={cpu?.thread === threadDraft} onClick={onSaveThread} />
             </div>
           </div>
 
@@ -964,13 +966,8 @@ export default function Cpu() {
                 <RadioButton
                   multiple
                   name="cores"
-                  value={draft?.core}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      core: e,
-                    }))
-                  }
+                  value={coreDraft}
+                  onChange={(e) => setCoreDraft(e)}
                   options={[
                     { label: "Core 0", value: 0 },
                     { label: "Core 1", value: 1 },
@@ -979,7 +976,7 @@ export default function Cpu() {
                   ]}
                 />
               </div>
-              <ButtonSave disabled={!disabledButton?.core || draft?.core?.length == 0} onClick={onChangeCore} />
+              <ButtonSave disabled={cpu?.core === coreDraft} onClick={onSaveCore} />
             </div>
           </div>
         </div>

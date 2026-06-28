@@ -145,15 +145,17 @@ function generateUserspace({ status, draft }) {
     return output;
 }
 
-function generateAffinity({ status, draft }) {
+function generateAffinity({ status, coreDraft, threadDraft }) {
     const output = [];
 
-    if (status?.core) {
-        output.push(`Core Pinning: taskset -c ${[draft?.core]} python3 script.py`)
-    }
+    console.log(threadDraft)
 
+    if (status?.core) {
+        output.push(`Core Pinning: taskset -c ${coreDraft} python3 script.py`)
+    }
+    
     if (status?.thread) {
-        output.push(`Threading: num_thread = ${draft?.thread}`)
+        output.push(`Threading: num_thread = ${threadDraft}`)
     }
 
     return output
@@ -169,12 +171,12 @@ const generators = {
     userspace: generateUserspace,
 };
 
-export function generateCommandFunction({ status, draft }) {
+export function generateCommandFunction({ status, draft, coreDraft, threadDraft }) {
     if (status?.core || status?.thread) {
-        return generateAffinity({ status, draft })
+        return generateAffinity({ status, coreDraft, threadDraft })
+    } else {
+        const generator = generators[draft?.governor];
+        if (!generator) return [];
+        return generator({ status, draft });
     }
-
-    const generator = generators[draft?.governor];
-    if (!generator) return [];
-    return generator({ status, draft });
 }
