@@ -1249,7 +1249,7 @@ export default function Cpu() {
                   placeholder="Input thread"
                 />
               </div>
-              {/* <p>asd</p> */}
+              <p className="text-warning">*Available Maximum Thread: 4</p>
               <ButtonSave disabled={cpu?.thread === threadDraft || threadDraft == ""} onClick={onSaveThread} />
             </div>
           </div>
@@ -1262,7 +1262,10 @@ export default function Cpu() {
                   multiple
                   name="cores"
                   value={coreDraft}
-                  onChange={(e) => setCoreDraft(e)}
+                  onChange={(e) => {
+                    const sortedCores = [...e].sort((a, b) => a - b);
+                    setCoreDraft(sortedCores);
+                  }}
                   options={[
                     { label: "Core 0", value: 0 },
                     { label: "Core 1", value: 1 },
