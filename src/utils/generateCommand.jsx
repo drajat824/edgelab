@@ -148,8 +148,6 @@ function generateUserspace({ status, draft }) {
 function generateAffinity({ status, coreDraft, threadDraft }) {
     const output = [];
 
-    console.log(threadDraft)
-
     if (status?.core) {
         output.push(`Core Pinning: taskset -c ${coreDraft} python3 script.py`)
     }

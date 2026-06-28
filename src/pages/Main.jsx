@@ -10,8 +10,6 @@ import useCPU from "../hooks/useCPU"
 export default function Main() {
 
   const { cpu } = useCPU();
-  console.log(cpu)
-
   const [cpuUtilization, setCpuUtilization] = useState(75)
   const [model, setModel] = useState("SSD MobileNet V3 Small")
   const [fps, setFps] = useState("FPS 30")
