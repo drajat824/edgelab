@@ -4,7 +4,14 @@ import Stop from '../assets/stop.svg';
 import ProgressBar from '../components/ProgressBar';
 import Dropdown from '../components/Dropdown';
 
+// State Management
+import useCPU from "../hooks/useCPU"
+
 export default function Main() {
+
+  const { cpu } = useCPU();
+  console.log(cpu)
+
   const [cpuUtilization, setCpuUtilization] = useState(75)
   const [model, setModel] = useState("SSD MobileNet V3 Small")
   const [fps, setFps] = useState("FPS 30")
@@ -220,9 +227,9 @@ export default function Main() {
                   <p className="text-subinfo">Core Pinning:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>Performance</p>
-                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>4</p>
-                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>0, 1, 2</p>
+                  <p className="text-subinfo uppercase" style={{ fontWeight: 'bold' }}>{cpu?.governor}</p>
+                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>{cpu?.thread}</p>
+                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>{cpu?.core?.join(', ')}</p>
                 </div>
               </div>
             </div>
