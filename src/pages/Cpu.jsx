@@ -326,8 +326,8 @@ export default function Cpu() {
               <p className="text-info">Threshold</p>
             </div>
             <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
-              <div className='flex items-center gap-8'>
-                <p className="text-info">Up</p>
+              <div className='flex items-center gap-6'>
+                <p className="text-info flex-1/4">Up</p>
                 <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Up Threshold" unit="%" value={draft?.ondemand?.thresholdUp ?? ""}
                   onChange={(e) =>
                     setDraft(prev => ({
@@ -340,7 +340,7 @@ export default function Cpu() {
                   } />
               </div>
               <div className='flex items-center gap-6'>
-                <p className="text-info">Down</p>
+                <p className="text-info flex-1/4">Down</p>
                 <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Down Threshold" unit="%" value={draft?.ondemand?.thresholdDown ?? ""}
                   onChange={(e) =>
                     setDraft(prev => ({
@@ -540,8 +540,8 @@ export default function Cpu() {
               <p className="text-info">Threshold</p>
             </div>
             <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
-              <div className='flex items-center gap-8'>
-                <p className="text-info">Up</p>
+              <div className='flex items-center gap-6'>
+                <p className="text-info flex-1/4">Up</p>
                 <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdUp ?? ""}
                   onChange={(e) =>
                     setDraft(prev => ({
@@ -554,7 +554,7 @@ export default function Cpu() {
                   } placeholder="Up Threshold" unit="%" />
               </div>
               <div className='flex items-center gap-6'>
-                <p className="text-info">Down</p>
+                <p className="text-info flex-1/4">Down</p>
                 <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdDown ?? ""}
                   onChange={(e) =>
                     setDraft(prev => ({
