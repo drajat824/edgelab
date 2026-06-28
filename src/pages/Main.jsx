@@ -110,7 +110,7 @@ export default function Main() {
           </div>
         </div>
 
-        {/* MODEL INFO  */}
+        {/* ACCURACY METRICS  */}
         <div className="flex-none flex flex-col">
           <div className="flex justify-end">
             <Dropdown
@@ -122,16 +122,16 @@ export default function Main() {
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <div className="card">
-              <p className="text-title">Model Info</p>
+              <p className="text-title">Accuracy Metrics</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Detection Rate:</p>
-                  <p className="text-info">Missed Detections:</p>
+                  <p className="text-info">Avg. Confidence Score:</p>
                   <p className="text-info">Average Precision:</p>
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="text-info">80%</p>
-                  <p className="text-info" style={{ color: 'red' }}>3 Object</p>
+                  <p className="text-info">50%</p>
                   <p className="text-info">90%</p>
                 </div>
               </div>
