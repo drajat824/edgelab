@@ -6,16 +6,26 @@ import Dropdown from '../components/Dropdown';
 
 // State Management
 import useCPU from "../hooks/useCPU"
+import useGround from "../hooks/useGround"
 
 export default function Main() {
 
   const { cpu } = useCPU();
+  const { boards } = useGround();
+  const [boardsName, setBoardsName] = useState([]);
+
   const [cpuUtilization, setCpuUtilization] = useState(75)
   const [model, setModel] = useState("SSD MobileNet V3 Small")
   const [fps, setFps] = useState("FPS 30")
-  const [gt, setGt] = useState("Board 1")
+  const [board, setBoard] = useState("Board 1")
 
   const [streamMode, setStreamMode] = useState(0) // 0: Stop, 1: Start
+
+  useEffect(() => {
+    if (!boards) return;
+    const names = boards.map((e) => e?.board_name);
+    setBoardsName(names);
+  }, [boards]);
 
   useEffect(() => {
     console.log("Stream Mode changed:", streamMode);
@@ -49,7 +59,7 @@ export default function Main() {
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown
-            width="w-65"
+              width="w-65"
               value={model}
               onChange={setModel}
               options={[
@@ -104,15 +114,10 @@ export default function Main() {
         <div className="flex-none flex flex-col">
           <div className="flex justify-end">
             <Dropdown
-            width="w-40"
-              value={gt}
-              onChange={setGt}
-              options={[
-                "Free Mode",
-                "Board 1",
-                "Board 2",
-                "Board 3",
-              ]}
+              width="w-40"
+              value={board}
+              onChange={setBoard}
+              options={boardsName}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">

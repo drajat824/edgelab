@@ -7,6 +7,7 @@ import Cpu from './pages/Cpu.jsx'
 import Ground from './pages/Ground.jsx'
 import './index.css'
 import CPUProvider from '../src/context/CPUProvider.jsx'
+import GroundProvider from '../src/context/GroundProvider.jsx'
 
 // Definisi rute bertingkat (nested routes)
 const router = createBrowserRouter([
@@ -33,7 +34,9 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <CPUProvider>
-      <RouterProvider router={router} />
+      <GroundProvider>
+        <RouterProvider router={router} />
+      </GroundProvider>
     </CPUProvider>
   </React.StrictMode>,
 )

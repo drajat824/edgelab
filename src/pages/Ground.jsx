@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import TextInput from "../components/TextInput"
 
@@ -10,6 +10,9 @@ import { CARDS1, CARDS2, CARDS3 } from "../components/CardsTemp"
 
 import Delete from "../assets/delete.svg"
 
+// State Management
+import useGround from "../hooks/useGround"
+
 const defaultBoard = () => ({
   id: "",
   name: "",
@@ -19,36 +22,36 @@ const defaultBoard = () => ({
   })),
 });
 
-const dumyBoards = () => ([{
-  id: "board-0",
-  name: "Board 1",
-  slots: Array.from({ length: 12 }, (_, i) => ({
-    id: `slot-${i}`,
-    value: CARDS[i * 4],
-  })),
-},
-{
-  id: "board-1",
-  name: "Board 2",
-  slots: Array.from({ length: 12 }, (_, i) => ({
-    id: `slot-${i}`,
-    value: CARDS[i * 2],
-  })),
-},
-]);
-
 export default function Ground() {
 
-  const [activeBoard, setActiveBoard] = useState(defaultBoard());
-  const [boards, setBoards] = useState(dumyBoards());
+  const { boards, dispatch } = useGround()
+  // console.log(boards)
+
+  useEffect(() => {
+    if (!boards) return;
+
+    const transformed = boards.map((globalBoard) => ({
+      id: globalBoard.board_id,
+      name: globalBoard.board_name,
+      slots: globalBoard.ground_truth.map((cardId, index) => ({
+        id: `slot-${index}`,
+        value: CARDS.find((card) => card.id === cardId) || null,
+      })),
+    }));
+
+    setDisplayBoards(transformed);
+  }, [boards]);
+
+  const [draftBoard, setDraftBoard] = useState(defaultBoard());
+  const [displayBoards, setDisplayBoards] = useState();
   const [isAddData, setAddData] = useState(false);
 
-  const isBoardEmpty = activeBoard?.slots?.every((slot) => slot.value === null) || !activeBoard?.name?.trim();
-  const isSaveDisabled = !activeBoard?.id?.trim()
+  const isBoardEmpty = draftBoard?.slots?.every((slot) => slot.value === null) || !draftBoard?.name?.trim();
+  const isSaveDisabled = !draftBoard?.id?.trim()
 
   const onSelectedBoard = (board) => {
     setAddData(false)
-    setActiveBoard({
+    setDraftBoard({
       id: board?.id,
       name: board?.name,
       slots: board?.slots
@@ -57,32 +60,34 @@ export default function Ground() {
 
   const onSave = () => {
     setAddData(false);
-    const isExistingBoard = boards.some((board) => board.id === activeBoard.id);
-    if (isExistingBoard) {
-      setBoards((prevBoards) =>
-        prevBoards.map((board) =>
-          board.id === activeBoard.id
-            ? { ...board, name: activeBoard.name, slots: activeBoard.slots }
-            : board
-        )
-      );
-    } else {
-      setBoards((prevBoards) => [...prevBoards, activeBoard]);
-    }
-    setActiveBoard(defaultBoard())
+    const boardToSave = {
+      board_id: draftBoard.id,
+      board_name: draftBoard.name,
+      ground_truth: draftBoard.slots.map((slot) => slot.value ? slot.value.id : null),
+    };
+
+    dispatch({
+      type: "SAVE_BOARD",
+      payload: boardToSave,
+    });
+
+    // Reset tampilan
+    setDraftBoard(defaultBoard());
   };
 
-  const onDelete = (id) => {
-    setBoards((prevBoards) => prevBoards.filter((board) => board.id !== id));
+const onDelete = (id) => {
+    dispatch({
+      type: "DELETE_BOARD",
+      payload: id,
+    });
   };
 
   const onAdd = () => {
     setAddData(true)
     const newBoard = defaultBoard();
     newBoard.id = `board-${Date.now()}`;
-    newBoard.name = `Board ${boards.length + 1}`;
-    setActiveBoard(newBoard);
-
+    newBoard.name = `Board ${displayBoards.length + 1}`;
+    setDraftBoard(newBoard);
   };
 
   return (
@@ -96,16 +101,16 @@ export default function Ground() {
       <div className="flex flex-col gap-4">
         <div className="card grid grid-cols-1 lg:grid-cols-2 laptop:grid-cols-4 gap-y-5 gap-x-4 items-center" style={{ paddingTop: "30px", paddingBottom: "30px" }} >
           {
-            boards?.map((e, i) => {
+            displayBoards?.map((e, i) => {
               const totalCards = e?.slots?.filter(slot => slot?.value).length || 0;
-              let selected = e?.id == activeBoard?.id ? true : false
+              let selected = e?.id == draftBoard?.id ? true : false
               return (
                 <div className="flex flex-col gap-3 justify-center items-center" >
                   <div className="flex items-center justify-between px-1 border-none w-[200px]">
-                    <span className="text-subinfo uppercase" style={{ fontWeight: 'normal', color: selected ? "blue" : "black" }}>
+                    <span className="text-subinfo uppercase truncate" style={{ fontWeight: 'normal', color: selected ? "blue" : "black" }}>
                       {e?.name}
                     </span>
-                    <span className="text-subinfo bg-blue-100 text-slate-600 px-1.5 py-0.5 rounded-full font-medium">
+                    <span className="text-subinfo bg-blue-100 text-slate-600 px-1.5 py-0.5 rounded-full font-medium text-center truncate">
                       {totalCards} CARDS
                     </span>
                   </div>
@@ -173,7 +178,7 @@ export default function Ground() {
             const card = CARDS.find((c) => c.id === cardId);
 
             if (card) {
-              setActiveBoard((prev) => ({
+              setDraftBoard((prev) => ({
                 ...prev,
                 slots: prev.slots.map((e) => e.id === slotId ? {
                   ...e, value: {
@@ -208,7 +213,7 @@ export default function Ground() {
             {/* EDIT BOARD GRID */}
             <div className="card flex flex-col justify-between" style={{ paddingTop: 30, paddingBottom: 30 }}>
               <div className="grid grid-cols-4 gap-2 p-2 border rounded-lg place-items-center">
-                {activeBoard.slots.map((e, i) => {
+                {draftBoard.slots.map((e, i) => {
                   return (
                     <Droppable
                       disabled={isSaveDisabled}
@@ -216,7 +221,7 @@ export default function Ground() {
                       key={e.id}
                       id={e.id}
                       onClick={() =>
-                        setActiveBoard((prev) => ({
+                        setDraftBoard((prev) => ({
                           ...prev, slots: prev.slots.map((s, index) => index === i ? { ...s, value: null } : s),
                         }))
                       }>
@@ -231,7 +236,7 @@ export default function Ground() {
               </div>
               <div className="flex-none flex flex-col gap-2 pt-4" >
                 <p className="text-info" style={{ fontWeight: "bold" }} >Board Name</p>
-                <TextInput disabled={isSaveDisabled} value={activeBoard?.name} placeholder="Input board name" onChange={(e) => setActiveBoard((p) => ({ ...p, name: e.target.value }))} />
+                <TextInput disabled={isSaveDisabled} value={draftBoard?.name} placeholder="Input board name" onChange={(e) => setDraftBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
                   <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: isSaveDisabled || isBoardEmpty ? 'not-allowed' : 'pointer', backgroundColor: isSaveDisabled || isBoardEmpty ? '#7e8186' : '#337D35' }} onClick={onSave} disabled={isSaveDisabled || isBoardEmpty}>
                     SAVE

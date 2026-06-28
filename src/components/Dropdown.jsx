@@ -31,7 +31,7 @@ export default function Dropdown({
                 onClick={() => setOpen(!open)}
                 disabled={disabled}
                 className="flex justify-between items-center gap-4 rounded-lg card-dorpdown cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed h-[45px]">
-                <span className="uppercase">{value || "Select..."}</span>
+                <span className="uppercase truncate">{value || "Select..."}</span>
                 <img src={DropdownIcon} alt="Dropdown" className={`w-4 h-3 ${open ? 'rotate-180' : ''}`} />
             </button>
 
@@ -56,13 +56,13 @@ export default function Dropdown({
                                   - Jika `isSelected` true, kita beri warna dasar aktif.
                                   - Triknya: Kita tambahkan `group-hover:bg-transparent group-hover:text-inherit` agar saat dropdown mendeteksi ada hover di areanya, warna item yang selected otomatis mengalah (jadi transparan), KECUALI item selected itu sendiri yang sedang di-hover (`hover:bg-[var(--menu)]`).
                                 */
-                                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 uppercase hover:bg-[var(--menu)] hover:text-white ${
-                                    isSelected 
-                                        ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white" 
+                                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 uppercase hover:bg-[var(--menu)] hover:text-white ${isSelected
+                                        ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white"
                                         : "text-current"
-                                }`}
+                                    }`}
                             >
-                                {opt}
+                                <p className="truncate">{opt}</p>
+
                             </button>
                         );
                     })}
