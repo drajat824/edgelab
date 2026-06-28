@@ -106,14 +106,18 @@ if cpu_temp > 70:
 
                 <button
                     onClick={onSave}
+                    disabled={disabled}
                     className="
                         px-5 py-2
                         rounded-xl
-                        bg-blue-500 hover:bg-blue-700
+                        bg-blue-500 
+                        hover:bg-blue-700
                         text-white
                         font-medium
                         transition
                         cursor-pointer
+                        disabled:cursor-not-allowed
+                        disabled:bg-gray-500
                     "
                 >
                     Save Script
