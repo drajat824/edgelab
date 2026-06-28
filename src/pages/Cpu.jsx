@@ -29,7 +29,6 @@ export default function Cpu() {
 
   // Status perubahan setiap field
   const [status, setStatus] = useState({});
-  console.log(status)
 
   // Script/log command
   const [log, setLog] = useState("");
@@ -100,14 +99,23 @@ export default function Cpu() {
    */
   const disabledButton = useMemo(() => {
     return Object.fromEntries(
-      Object.entries(status).map(([key, value]) => [
-        key,
-        typeof value === "boolean"
-          ? value
-          : Object.values(value).some(Boolean),
-      ])
+      Object.entries(status).map(([key, value]) => {
+        if (typeof value === "boolean") {
+          return [key, value];
+        }
+
+        // Ada perubahan?
+        const hasChanged = Object.values(value).some(Boolean);
+
+        // Ada field kosong?
+        const hasEmpty = Object.entries(draft[key] ?? {}).some(
+          ([_, v]) => v === ""
+        );
+
+        return [key, hasChanged && !hasEmpty];
+      })
     );
-  }, [status]);
+  }, [status, draft]);
 
   /**
    * Simpan konfigurasi governor

@@ -15,40 +15,40 @@ export const initialState = {
     ondemand: {
         maxFreq: 1.8,
         minFreq: 0.6,
-        thresholdUp: null,
-        thresholdDown: null,
-        samplingRate: null,
-        samplingDownFactor: null,
+        thresholdUp: 85,
+        thresholdDown: 50,
+        samplingRate: 20000,
+        samplingDownFactor: 1,
         isIgnoreNice: false,
         isIoBusy: false,
-        powerBias: null,
+        powerBias: 0,
     },
 
     conservative: {
         maxFreq: 1.8,
         minFreq: 0.6,
-        thresholdUp: null,
-        thresholdDown: null,
-        samplingRate: null,
-        samplingDownFactor: null,
+        thresholdUp: 80,
+        thresholdDown: 20,
+        samplingRate: 200000,
+        samplingDownFactor: 1,
         isIgnoreNice: false,
-        frequencyStep: null,
+        frequencyStep: 5,
     },
 
     schedutil: {
         maxFreq: 1.8,
         minFreq: 0.6,
-        rateLimit: null,
+        rateLimit: 2000,
     },
 
     userspace: {
         maxFreq: 1.8,
         minFreq: 0.6,
-        fixedFrequency: null,
+        fixedFrequency: 1.8,
         isDynamicScripting: false,
-        script: "",
-    },
-};
+        script: "tes",
+    }
+}
 
 export function cpuReducer(state, action) {
     switch (action.type) {
