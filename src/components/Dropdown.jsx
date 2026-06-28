@@ -37,20 +37,35 @@ export default function Dropdown({
 
             {/* DROPDOWN */}
             {open && (
-                <div className="absolute left-0 mt-2 w-full bg-[var(--white)] border border-[#2a2a3a] rounded-lg overflow-hidden z-50 shadow-lg">
-                    {options.map((opt, index) => (
-                        <button
-                            key={index}
-                            onClick={() => {
-                                onChange(opt)
-                                setOpen(false)
-                            }}
-                            disabled={disabled}
-                            className="w-full text-left px-4 py-2 hover:bg-[var(--menu)] hover:text-white transition cursor-pointer disabled:opacity-50 uppercase"
-                        >
-                            {opt}
-                        </button>
-                    ))}
+                /* 1. Tambahkan class "group" pada container dropdown ini */
+                <div className="absolute left-0 mt-2 w-full bg-[var(--white)] border border-[#2a2a3a] rounded-lg overflow-hidden z-50 shadow-lg group">
+                    {options.map((opt, index) => {
+                        const isSelected = opt === value;
+
+                        return (
+                            <button
+                                key={index}
+                                onClick={() => {
+                                    onChange(opt)
+                                    setOpen(false)
+                                }}
+                                disabled={disabled}
+                                /* 
+                                  2. Logika Class Baru:
+                                  - Semua item punya efek `hover:bg-[var(--menu)] hover:text-white`.
+                                  - Jika `isSelected` true, kita beri warna dasar aktif.
+                                  - Triknya: Kita tambahkan `group-hover:bg-transparent group-hover:text-inherit` agar saat dropdown mendeteksi ada hover di areanya, warna item yang selected otomatis mengalah (jadi transparan), KECUALI item selected itu sendiri yang sedang di-hover (`hover:bg-[var(--menu)]`).
+                                */
+                                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 uppercase hover:bg-[var(--menu)] hover:text-white ${
+                                    isSelected 
+                                        ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white" 
+                                        : "text-current"
+                                }`}
+                            >
+                                {opt}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>

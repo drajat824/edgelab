@@ -49,6 +49,7 @@ export default function Main() {
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown
+            width="w-65"
               value={model}
               onChange={setModel}
               options={[
@@ -58,6 +59,7 @@ export default function Main() {
               disabled={streamMode === 1}
             />
             <Dropdown
+              width="w-30"
               value={fps}
               onChange={setFps}
               options={[
@@ -102,6 +104,7 @@ export default function Main() {
         <div className="flex-none flex flex-col">
           <div className="flex justify-end">
             <Dropdown
+            width="w-40"
               value={gt}
               onChange={setGt}
               options={[
