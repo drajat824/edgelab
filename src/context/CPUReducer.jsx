@@ -1,5 +1,5 @@
 export const initialState = {
-    governor: "Performance",
+    governor: "performance",
 
     performance: {
         maxFreq: 1800000,
@@ -49,14 +49,11 @@ export const initialState = {
 
 export function cpuReducer(state, action) {
     switch (action.type) {
-
         case "SAVE_GOVERNOR_CONFIG":
             return {
                 ...state,
-                [action.payload.governor]: {
-                    ...state[action.payload.governor],
-                    ...action.payload.config,
-                },
+                [action.payload.governor]:
+                    action.payload.config[action.payload.governor]
             };
 
         case "CHANGE_GOVERNOR":
