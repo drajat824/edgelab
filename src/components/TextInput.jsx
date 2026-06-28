@@ -9,13 +9,16 @@ const TextInput = ({
   className = "",
   type = "text",
   width = "w-full",
-  disabled = false
+  onInput,
+  disabled = false,
+  onBlur
 }) => {
   return (
     <div className={`${width} ${className} text-info`}>
       {/* Input wrapper */}
       <div className="relative border border-[var(--menu)] rounded-lg">
         <input
+          onInput={onInput}
           type={type}
           onWheel={
             type === "number"
@@ -23,6 +26,7 @@ const TextInput = ({
               : undefined
           }
           value={value}
+          onBlur={onBlur}
           onChange={onChange}
           disabled={disabled}
           placeholder={placeholder}

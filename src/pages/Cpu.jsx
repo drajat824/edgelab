@@ -60,7 +60,7 @@ export default function Cpu() {
 
     return changed;
   }
-  
+
   /**
    * Mengambil data CPU dari Context
    * Simpan sebagai original dan draft
@@ -255,14 +255,34 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               <InputWithUnit
                 type="number"
+                min={0.6}
+                max={1.8}
                 disabled={cpu?.governor != "performance"}
                 unit="GHz"
                 value={draft?.performance?.maxFreq}
-                onChange={(e) => setDraft((prev) => ({
-                  ...prev,
-                  performance: { maxFreq: Number(e.target.value) }
-                }))}
-                placeholder="Input frequency"
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    performance: {
+                      ...prev.performance,
+                      maxFreq: e.target.value,
+                    },
+                  }))
+                }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.performance.maxFreq);
+                    if (prev.performance.maxFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      performance: {
+                        ...prev.performance,
+                        maxFreq: value,
+                      },
+                    };
+                  });
+                }}
               />
               <p className="text-warning">*Available Maximum Frequency: 1.8 GHz</p>
             </div>
@@ -290,13 +310,32 @@ export default function Cpu() {
                 disabled={cpu?.governor != "powersave"}
                 unit="GHz"
                 value={draft?.powersave?.minFreq}
-                onChange={(e) => setDraft((prev) => ({
-                  ...prev,
-                  powersave: { minFreq: Number(e.target.value) }
-                }))}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    powersave: {
+                      ...prev.powersave,
+                      minFreq: e.target.value,
+                    },
+                  }))
+                }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.powersave.minFreq);
+                    if (prev.powersave.minFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      powersave: {
+                        ...prev.powersave,
+                        minFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning">*Available Minimum Frequency: 1.8 GHz</p>
+              <p className="text-warning">*Available Minimum Frequency: 0.6 GHz</p>
             </div>
           </div>
           {/* Button  */}
@@ -325,14 +364,28 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.ondemand?.maxFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     ondemand: {
                       ...prev.ondemand,
-                      maxFreq: Number(e.target.value)
-                    }
+                      maxFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.ondemand.maxFreq);
+                    if (prev.ondemand.maxFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      ondemand: {
+                        ...prev.ondemand,
+                        maxFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -351,17 +404,31 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.ondemand?.minFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     ondemand: {
                       ...prev.ondemand,
-                      minFreq: Number(e.target.value)
-                    }
+                      minFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.ondemand.minFreq);
+                    if (prev.ondemand.minFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      ondemand: {
+                        ...prev.ondemand,
+                        minFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
             </div>
           </div>
 
@@ -375,27 +442,55 @@ export default function Cpu() {
                 <p className="text-info flex-1/4">Up</p>
                 <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Up Threshold" unit="%" value={draft?.ondemand?.thresholdUp ?? ""}
                   onChange={(e) =>
-                    setDraft(prev => ({
+                    setDraft((prev) => ({
                       ...prev,
                       ondemand: {
                         ...prev.ondemand,
-                        thresholdUp: Number(e.target.value)
-                      }
+                        thresholdUp: e.target.value,
+                      },
                     }))
-                  } />
+                  }
+                  onBlur={() => {
+                    setDraft((prev) => {
+                      let value = Number(prev.ondemand.thresholdUp);
+                      if (prev.ondemand.thresholdUp === "") return prev;
+                      value = Math.min(100, Math.max(1, value));
+                      return {
+                        ...prev,
+                        ondemand: {
+                          ...prev.ondemand,
+                          thresholdUp: value,
+                        },
+                      };
+                    });
+                  }} />
               </div>
               <div className='flex items-center gap-6'>
                 <p className="text-info flex-1/4">Down</p>
                 <InputWithUnit disabled={cpu?.governor != "ondemand"} type="number" placeholder="Down Threshold" unit="%" value={draft?.ondemand?.thresholdDown ?? ""}
                   onChange={(e) =>
-                    setDraft(prev => ({
+                    setDraft((prev) => ({
                       ...prev,
                       ondemand: {
                         ...prev.ondemand,
-                        thresholdDown: Number(e.target.value)
-                      }
+                        thresholdDown: e.target.value,
+                      },
                     }))
-                  } />
+                  }
+                  onBlur={() => {
+                    setDraft((prev) => {
+                      let value = Number(prev.ondemand.thresholdDown);
+                      if (prev.ondemand.thresholdDown === "") return prev;
+                      value = Math.min(100, Math.max(1, value));
+                      return {
+                        ...prev,
+                        ondemand: {
+                          ...prev.ondemand,
+                          thresholdDown: value,
+                        },
+                      };
+                    });
+                  }} />
               </div>
             </div>
           </div>
@@ -502,14 +597,28 @@ export default function Cpu() {
                 unit="%"
                 value={draft?.ondemand?.powerBias ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     ondemand: {
                       ...prev.ondemand,
-                      powerBias: Number(e.target.value)
-                    }
+                      powerBias: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.ondemand.powerBias);
+                    if (prev.ondemand.powerBias === "") return prev;
+                    value = Math.min(100, Math.max(1, value));
+                    return {
+                      ...prev,
+                      ondemand: {
+                        ...prev.ondemand,
+                        powerBias: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input power bias"
               />
             </div>
@@ -540,14 +649,28 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.conservative?.maxFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     conservative: {
                       ...prev.conservative,
-                      maxFreq: Number(e.target.value)
-                    }
+                      maxFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.conservative.maxFreq);
+                    if (prev.conservative.maxFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      conservative: {
+                        ...prev.conservative,
+                        maxFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -565,17 +688,31 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.conservative?.minFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     conservative: {
                       ...prev.conservative,
-                      minFreq: Number(e.target.value)
-                    }
+                      minFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.conservative.minFreq);
+                    if (prev.conservative.minFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      conservative: {
+                        ...prev.conservative,
+                        minFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
             </div>
           </div>
 
@@ -589,27 +726,57 @@ export default function Cpu() {
                 <p className="text-info flex-1/4">Up</p>
                 <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdUp ?? ""}
                   onChange={(e) =>
-                    setDraft(prev => ({
+                    setDraft((prev) => ({
                       ...prev,
                       conservative: {
                         ...prev.conservative,
-                        thresholdUp: Number(e.target.value)
-                      }
+                        thresholdUp: e.target.value,
+                      },
                     }))
-                  } placeholder="Up Threshold" unit="%" />
+                  }
+                  onBlur={() => {
+                    setDraft((prev) => {
+                      let value = Number(prev.conservative.thresholdUp);
+                      if (prev.conservative.thresholdUp === "") return prev;
+                      value = Math.min(100, Math.max(1, value));
+                      return {
+                        ...prev,
+                        conservative: {
+                          ...prev.conservative,
+                          thresholdUp: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Up Threshold" unit="%" />
               </div>
               <div className='flex items-center gap-6'>
                 <p className="text-info flex-1/4">Down</p>
                 <InputWithUnit disabled={cpu?.governor != "conservative"} type="number" value={draft?.conservative?.thresholdDown ?? ""}
                   onChange={(e) =>
-                    setDraft(prev => ({
+                    setDraft((prev) => ({
                       ...prev,
                       conservative: {
                         ...prev.conservative,
-                        thresholdDown: Number(e.target.value)
-                      }
+                        thresholdDown: e.target.value,
+                      },
                     }))
-                  } placeholder="Down Threshold" unit="%" />
+                  }
+                  onBlur={() => {
+                    setDraft((prev) => {
+                      let value = Number(prev.conservative.thresholdDown);
+                      if (prev.conservative.thresholdDown === "") return prev;
+                      value = Math.min(100, Math.max(1, value));
+                      return {
+                        ...prev,
+                        conservative: {
+                          ...prev.conservative,
+                          thresholdDown: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Down Threshold" unit="%" />
               </div>
             </div>
           </div>
@@ -696,14 +863,28 @@ export default function Cpu() {
                 unit="%"
                 value={draft?.conservative?.frequencyStep ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     conservative: {
                       ...prev.conservative,
-                      frequencyStep: Number(e.target.value)
-                    }
+                      frequencyStep: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.conservative.frequencyStep);
+                    if (prev.conservative.frequencyStep === "") return prev;
+                    value = Math.min(100, Math.max(1, value));
+                    return {
+                      ...prev,
+                      conservative: {
+                        ...prev.conservative,
+                        frequencyStep: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency step"
               />
             </div>
@@ -734,14 +915,28 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.schedutil?.maxFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     schedutil: {
                       ...prev.schedutil,
-                      maxFreq: Number(e.target.value)
-                    }
+                      maxFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.schedutil.maxFreq);
+                    if (prev.schedutil.maxFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      schedutil: {
+                        ...prev.schedutil,
+                        maxFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -760,17 +955,31 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.schedutil?.minFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     schedutil: {
                       ...prev.schedutil,
-                      minFreq: Number(e.target.value)
-                    }
+                      minFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.schedutil.minFreq);
+                    if (prev.schedutil.minFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      schedutil: {
+                        ...prev.schedutil,
+                        minFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
-              <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
+              <p className="text-warning absolute">*Available Minimum Frequency: 0.6 GHz</p>
             </div>
           </div>
 
@@ -822,14 +1031,28 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.userspace?.maxFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     userspace: {
                       ...prev.userspace,
-                      maxFreq: Number(e.target.value)
-                    }
+                      maxFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.userspace.maxFreq);
+                    if (prev.userspace.maxFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      userspace: {
+                        ...prev.userspace,
+                        maxFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Maximum Frequency: 1.8 GHz</p>
@@ -847,21 +1070,35 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.userspace?.minFreq ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     userspace: {
                       ...prev.userspace,
-                      minFreq: Number(e.target.value)
-                    }
+                      minFreq: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.userspace.minFreq);
+                    if (prev.userspace.minFreq === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      userspace: {
+                        ...prev.userspace,
+                        minFreq: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input frequency"
               />
               <p className="text-warning absolute">*Available Minimum Frequency: 0.66 GHz</p>
             </div>
           </div>
 
-          {/* Rate Limit  */}
+          {/* Fixed Frequency  */}
           <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
             <div className="flex-none">
               <p className="text-info">Fixed Frequency</p>
@@ -872,14 +1109,28 @@ export default function Cpu() {
                 unit="GHz"
                 value={draft?.userspace?.fixedFrequency ?? ""}
                 onChange={(e) =>
-                  setDraft(prev => ({
+                  setDraft((prev) => ({
                     ...prev,
                     userspace: {
                       ...prev.userspace,
-                      fixedFrequency: Number(e.target.value)
-                    }
+                      fixedFrequency: e.target.value,
+                    },
                   }))
                 }
+                onBlur={() => {
+                  setDraft((prev) => {
+                    let value = Number(prev.userspace.fixedFrequency);
+                    if (prev.userspace.fixedFrequency === "") return prev;
+                    value = Math.min(1.8, Math.max(0.6, value));
+                    return {
+                      ...prev,
+                      userspace: {
+                        ...prev.userspace,
+                        fixedFrequency: value,
+                      },
+                    };
+                  });
+                }}
                 placeholder="Input fixed frequency"
               />
             </div>
