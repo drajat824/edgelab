@@ -1,10 +1,31 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+
+const TypingText = ({ text = "", speed }) => {
+    const [displayed, setDisplayed] = useState("");
+
+    useEffect(() => {
+        setDisplayed("");
+
+        let index = 0;
+        const interval = setInterval(() => {
+            index++;
+            setDisplayed(text.slice(0, index));
+
+            if (index >= text.length) {
+                clearInterval(interval);
+            }
+        }, speed);
+
+        return () => clearInterval(interval);
+    }, [text, speed]);
+
+    return <>{displayed}</>;
+};
 
 const Log = ({
-    value = [], // Sekarang mengekspektasikan array of objects dari fungsi di atas
+    value = [],
     className = "",
 }) => {
-    // Normalisasi input jika tipenya bukan array
     const commandsArray = Array.isArray(value) ? value : [];
 
     return (
@@ -12,21 +33,31 @@ const Log = ({
             <p className="text-info" style={{ fontWeight: "bold" }}>
                 Generated Command
             </p>
-            
+
             <div className="mt-4 space-y-3 p-3 rounded-lg bg-[#EBEBEB] border border-black">
                 {commandsArray.length === 0 ? (
-                    <span className="text-gray-500 italic text-sm">No commands generated.</span>
+                    <span className="text-gray-500 italic text-sm">
+                        No commands generated.
+                    </span>
                 ) : (
                     commandsArray.map((item, index) => (
-                        <div key={index} className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 text-sm">
-                            {/* Styling khusus untuk Label (Contoh: Tebal & Abu-abu Tua) */}
-                            <span style={{fontWeight: 'normal'}} className="text-subinfo min-w-[130px] shrink-0">
+                        <div
+                            key={index}
+                            className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 text-sm"
+                        >
+                            <span
+                                style={{ fontWeight: "normal" }}
+                                className="text-subinfo min-w-[130px] shrink-0"
+                            >
                                 • {item.label}
                             </span>
-                            
-                            {/* Styling khusus untuk Command (Contoh: Monospace ala terminal) */}
+
                             <code className="bg-white/60 px-2 py-1 rounded border border-gray-300 font-mono text-md text-green-600 break-all w-full">
-                                {item.command}
+                                <TypingText
+                                    text={item.command}
+                                    speed={30}
+                                />
+                                {/* <span className="animate-pulse hidden">|</span> */}
                             </code>
                         </div>
                     ))
