@@ -617,7 +617,7 @@ export default function Cpu() {
                   setDraft((prev) => {
                     let value = Number(prev.ondemand.powerBias);
                     if (prev.ondemand.powerBias === "") return prev;
-                    value = Math.min(100, Math.max(1, value));
+                    value = Math.min(100, Math.max(0, value));
                     return {
                       ...prev,
                       ondemand: {
