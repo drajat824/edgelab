@@ -1207,14 +1207,19 @@ export default function Cpu() {
                   type="number"
                   value={threadDraft}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    const numericValue = val === "" ? "" : Number(val);
-                    setThreadDraft(numericValue)
+                    setThreadDraft(e.target.value);
+                  }}
+                  onBlur={() => {
+                    let value = threadDraft;
+                    value = Number(value);
+                    if (value < 1) value = 1;
+                    if (value > 4) value = 4;
+                    setThreadDraft(value);
                   }}
                   placeholder="Input thread"
                 />
               </div>
-              <ButtonSave disabled={cpu?.thread === threadDraft} onClick={onSaveThread} />
+              <ButtonSave disabled={cpu?.thread === threadDraft || threadDraft == ""} onClick={onSaveThread} />
             </div>
           </div>
 
@@ -1235,7 +1240,7 @@ export default function Cpu() {
                   ]}
                 />
               </div>
-              <ButtonSave disabled={cpu?.core === coreDraft} onClick={onSaveCore} />
+              <ButtonSave disabled={cpu?.core === coreDraft || coreDraft?.length == 0} onClick={onSaveCore} />
             </div>
           </div>
         </div>
