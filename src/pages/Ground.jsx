@@ -220,7 +220,7 @@ const onDelete = (id) => {
                       isEmpty={!!e.value ? false : true}
                       key={e.id}
                       id={e.id}
-                      onClick={() =>
+                      onMouseDown={() =>
                         setDraftBoard((prev) => ({
                           ...prev, slots: prev.slots.map((s, index) => index === i ? { ...s, value: null } : s),
                         }))

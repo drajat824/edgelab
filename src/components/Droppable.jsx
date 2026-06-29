@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/react";
 import { useState } from "react";
 import Detele from '../assets/delete-cards.svg'
 
-export default function Droppable({ id, children, onClick, isEmpty = true, disabled }) {
+export default function Droppable({ id, children, onMouseDown, isEmpty = true, disabled }) {
   const [isHover, setIsHover] = useState(false);
 
   const { ref, isOver } = useDroppable({
@@ -19,7 +19,7 @@ export default function Droppable({ id, children, onClick, isEmpty = true, disab
     ) : (
       /* Tampilan saat AKTIF (bisa diinteraksi & bisa hapus kartu) */
       <button
-        onClick={onClick}
+        onMouseDown={onMouseDown}
         ref={ref}
         className={`relative w-15 h-20 border border-dashed rounded flex items-center justify-center transition-all duration-300 ${!isEmpty ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : "border-gray-500"}`}
         onMouseEnter={() => setIsHover(true)}
