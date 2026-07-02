@@ -8,6 +8,7 @@ export default function Dropdown({
     onChange,
     disabled = false,
     width = "w-fit",
+    style = {},
 }) {
     const [open, setOpen] = useState(false)
     const ref = useRef()
@@ -24,7 +25,7 @@ export default function Dropdown({
     }, [])
 
     return (
-        <div className={`relative ${width}`} ref={ref}>
+        <div className={`relative ${width}`} ref={ref} style={style}>
 
             {/* BUTTON */}
             <button
