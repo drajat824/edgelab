@@ -4,7 +4,8 @@ const Checkbox = ({
     checked = false,
     onChange,
     className = "",
-    disabled = false
+    disabled = false,
+    actived = false
 }) => {
     return (
         <label
@@ -23,12 +24,14 @@ const Checkbox = ({
                 className={`w-9 h-9 rounded-lg border-2 flex items-center justify-center transition-colors
                     ${disabled
                         ? "border-gray-600 bg-slate-800"
-                        : "border-[var(--menu)] hover:bg-[var(--bg)]"
+                        : actived
+                            ? "border-blue-500"
+                            : "border-[var(--menu)] hover:bg-[var(--bg)]"
                     }`}>
                 {!!checked && (
                     <div
                         className={`w-[60%] h-[60%] rounded-md transition-all
-                            ${disabled ? "bg-gray-500" : "bg-[var(--menu)]"}`}
+                            ${disabled ? "bg-gray-500" : actived ? "bg-blue-500" : "bg-[var(--menu)]"}`}
                     />
                 )}
             </div>

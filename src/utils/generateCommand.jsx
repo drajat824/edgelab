@@ -1,277 +1,214 @@
-function generatePerformance({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
-
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-
-    return output;
-}
-function generatePowersave({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
-
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-    if (status[gov]?.minFreq) {
-        output.push({
-            label: "Min Frequency",
-            command: `echo ${draft[gov]?.minFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`
-        });
-    }
-
-    return output;
+function generateGovernor({ status, governor }) {
+  const output = [];
+  if (status?.governor && governor) {
+    output.push({
+      label: "Change Governor",
+      command: `echo ${governor} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`,
+    });
+  }
+  return output;
 }
 
-function generateOndemand({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
+function generateStatus({ status, freqDraft }) {
+  const output = [];
+  if (!freqDraft) return output;
 
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-    if (status[gov]?.minFreq) {
-        output.push({
-            label: "Min Frequency",
-            command: `echo ${draft[gov]?.minFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`
-        });
-    }
-    if (status[gov]?.thresholdUp) {
-        output.push({
-            label: "Threshold UP",
-            command: `echo ${draft[gov]?.thresholdUp} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/up_threshold`
-        });
-    }
-    if (status[gov]?.thresholdDown) {
-        output.push({
-            label: "Threshold Down",
-            command: `echo ${draft[gov]?.thresholdDown} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/down_threshold`
-        });
-    }
-    if (status[gov]?.samplingRate) {
-        output.push({
-            label: "Sampling Rate",
-            command: `echo ${draft[gov]?.samplingRate} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate`
-        });
-    }
-    if (status[gov]?.samplingDownFactor) {
-        output.push({
-            label: "Sampling Down Factor",
-            command: `echo ${draft[gov]?.samplingDownFactor} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor`
-        });
-    }
-    if (status[gov]?.isIgnoreNice) {
-        output.push({
-            label: "Ignore Nice Load",
-            command: `echo ${draft[gov]?.isIgnoreNice ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load`
-        });
-    }
-    if (status[gov]?.isIoBusy) {
-        output.push({
-            label: "I/O Busy",
-            command: `echo ${draft[gov]?.isIoBusy ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/io_is_busy`
-        });
-    }
-    if (status[gov]?.powerBias) {
-        output.push({
-            label: "Power Bias",
-            command: `echo ${draft[gov]?.powerBias} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias`
-        });
-    }
+  if (status?.freq?.max && freqDraft.max) {
+    const maxKHz = parseFloat(freqDraft.max) * 1000000;
+    output.push({
+      label: "Max Frequency",
+      command: `echo ${maxKHz} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`,
+    });
+  }
 
-    return output;
+  if (status?.freq?.min && freqDraft.min) {
+    const minKHz = parseFloat(freqDraft.min) * 1000000;
+    output.push({
+      label: "Min Frequency",
+      command: `echo ${minKHz} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`,
+    });
+  }
+
+  return output;
 }
 
-function generateConservative({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
+function generateOndemand({ status, tunable, governor }) {
+  const output = [];
+  const config = tunable?.[governor];
+  if (!config) return output;
 
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-    if (status[gov]?.minFreq) {
-        output.push({
-            label: "Min Frequency",
-            command: `echo ${draft[gov]?.minFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`
-        });
-    }
-    if (status[gov]?.thresholdUp) {
-        output.push({
-            label: "Threshold UP",
-            command: `echo ${draft[gov]?.thresholdUp} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/up_threshold`
-        });
-    }
-    if (status[gov]?.thresholdDown) {
-        output.push({
-            label: "Threshold Down",
-            command: `echo ${draft[gov]?.thresholdDown} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/down_threshold`
-        });
-    }
-    if (status[gov]?.samplingRate) {
-        output.push({
-            label: "Sampling Rate",
-            command: `echo ${draft[gov]?.samplingRate} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/sampling_rate`
-        });
-    }
-    if (status[gov]?.samplingDownFactor) {
-        output.push({
-            label: "Sampling Down Factor",
-            command: `echo ${draft[gov]?.samplingDownFactor} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/sampling_down_factor`
-        });
-    }
-    if (status[gov]?.isIgnoreNice) {
-        output.push({
-            label: "Ignore Nice Load",
-            command: `echo ${draft[gov]?.isIgnoreNice ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/ignore_nice_load`
-        });
-    }
-    if (status[gov]?.frequencyStep) {
-        output.push({
-            label: "Frequency Step",
-            command: `echo ${draft[gov]?.frequencyStep} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/freq_step`
-        });
-    }
+  const fields = [
+    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
+    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
+    { key: "samplingRate", label: "Sampling Rate", path: "sampling_rate" },
+    {
+      key: "samplingDownFactor",
+      label: "Sampling Down Factor",
+      path: "sampling_down_factor",
+    },
+    { key: "powerBias", label: "Power Bias", path: "powersave_bias" },
+  ];
 
-    return output;
+  fields.forEach(({ key, label, path }) => {
+    if (status[governor]?.[key]) {
+      output.push({
+        label,
+        command: `echo ${config[key]} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/${path}`,
+      });
+    }
+  });
+
+  if (status[governor]?.isIgnoreNice) {
+    output.push({
+      label: "Ignore Nice Load",
+      command: `echo ${config.isIgnoreNice ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load`,
+    });
+  }
+  if (status[governor]?.isIoBusy) {
+    output.push({
+      label: "I/O Busy",
+      command: `echo ${config.isIoBusy ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/ondemand/io_is_busy`,
+    });
+  }
+
+  return output;
 }
 
-function generateSchedutil({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
+function generateConservative({ status, tunable, governor }) {
+  const output = [];
+  const config = tunable?.[governor];
+  if (!config) return output;
 
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-    if (status[gov]?.minFreq) {
-        output.push({
-            label: "Min Frequency",
-            command: `echo ${draft[gov]?.minFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`
-        });
-    }
-    if (status[gov]?.rateLimit) {
-        output.push({
-            label: "Rate Limit",
-            command: `echo ${draft[gov]?.rateLimit} | sudo tee /sys/devices/system/cpu/cpufreq/schedutil/rate_limit_us`
-        });
-    }
+  // 💡 REVISI: Logika ganti governor di sini dihapus karena sudah di-handle global di atas
 
-    return output;
+  const fields = [
+    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
+    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
+    { key: "samplingRate", label: "Sampling Rate", path: "sampling_rate" },
+    {
+      key: "samplingDownFactor",
+      label: "Sampling Down Factor",
+      path: "sampling_down_factor",
+    },
+    { key: "frequencyStep", label: "Frequency Step", path: "freq_step" },
+  ];
+
+  fields.forEach(({ key, label, path }) => {
+    if (status[governor]?.[key]) {
+      output.push({
+        label,
+        command: `echo ${config[key]} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/${path}`,
+      });
+    }
+  });
+
+  if (status[governor]?.isIgnoreNice) {
+    output.push({
+      label: "Ignore Nice Load",
+      command: `echo ${config.isIgnoreNice ? 1 : 0} | sudo tee /sys/devices/system/cpu/cpufreq/conservative/ignore_nice_load`,
+    });
+  }
+
+  return output;
 }
 
-function generateUserspace({ status, draft }) {
-    const output = [];
-    const gov = draft?.governor;
+function generateSchedutil({ status, tunable, governor }) {
+  const output = [];
+  const config = tunable?.[governor];
 
-    if (status?.governor) {
-        output.push({
-            label: "Change Governor",
-            command: `echo ${gov} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`
-        });
-    }
-    if (status[gov]?.maxFreq) {
-        output.push({
-            label: "Max Frequency",
-            command: `echo ${draft[gov]?.maxFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`
-        });
-    }
-    if (status[gov]?.minFreq) {
-        output.push({
-            label: "Min Frequency",
-            command: `echo ${draft[gov]?.minFreq} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`
-        });
-    }
-    if (status[gov]?.fixedFrequency) {
-        output.push({
-            label: "Fixed Frequency",
-            command: `echo ${draft[gov]?.fixedFrequency} | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed`
-        });
-    }
+  if (status[governor]?.rateLimit && config?.rateLimit) {
+    output.push({
+      label: "Rate Limit",
+      command: `echo ${config.rateLimit} | sudo tee /sys/devices/system/cpu/cpufreq/schedutil/rate_limit_us`,
+    });
+  }
 
-    return output;
+  return output;
+}
+
+function generateUserspace({ status, tunable, governor }) {
+  const output = [];
+  const config = tunable?.[governor];
+
+  if (status[governor]?.fixedFrequency && config?.fixedFrequency) {
+    output.push({
+      label: "Fixed Frequency",
+      command: `echo ${config.fixedFrequency} | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed`,
+    });
+  }
+
+  return output;
 }
 
 function generateAffinity({ status, coreDraft, threadDraft }) {
-    const output = [];
+  const output = [];
 
-    if (status?.core) {
-        output.push({
-            label: "Core Pinning",
-            command: `taskset -c ${Array.isArray(coreDraft) ? coreDraft.join(',') : coreDraft} python3 script.py`
-        });
-    }
+  if (status?.core) {
+    output.push({
+      label: "Core Pinning",
+      command: `taskset -c ${Array.isArray(coreDraft) ? coreDraft.join(",") : coreDraft} python3 script.py`,
+    });
+  }
 
-    if (status?.thread) {
-        output.push({
-            label: "Threading",
-            command: `num_thread = ${threadDraft}`
-        });
-    }
+  if (status?.thread) {
+    output.push({
+      label: "Threading",
+      command: `num_thread = ${threadDraft}`,
+    });
+  }
 
-    return output;
+  return output;
 }
 
 const generators = {
-    performance: generatePerformance,
-    powersave: generatePowersave,
-    ondemand: generateOndemand,
-    conservative: generateConservative,
-    schedutil: generateSchedutil,
-    userspace: generateUserspace,
+  ondemand: generateOndemand,
+  conservative: generateConservative,
+  schedutil: generateSchedutil,
+  userspace: generateUserspace,
 };
 
-export function generateCommandFunction({ status, draft, coreDraft, threadDraft }) {
-    if (status?.core || status?.thread) {
-        return generateAffinity({ status, coreDraft, threadDraft })
-    } else {
-        const generator = generators[draft?.governor];
-        if (!generator) return [];
-        return generator({ status, draft });
-    }
+// --- MAIN EXPORT FUNCTION ---
+
+export function generateCommandFunction({
+  status,
+  draft, 
+  governor,
+  coreDraft,
+  threadDraft,
+  freqDraft,
+}) {
+  const output = [];
+
+  // 1. Jika governor sistem yang berubah
+  if (status?.governor === true) {
+    output.push(...generateGovernor({ status, governor }));
+  } 
+  
+  // 2. Jika frekuensi yang berubah
+  if (typeof status?.freq === "object" && status.freq !== null) {
+    output.push(...generateStatus({ status, freqDraft }));
+  } 
+  
+  // 3. Jika core atau thread yang berubah
+  if (status?.core === true || status?.thread === true) {
+    output.push(...generateAffinity({ status, coreDraft, threadDraft }));
+  } 
+
+  // 4. Jika ada perubahan parameter internal (tunables) milik governor
+  // Gunakan governor eksplit dari parameter, jika tidak ada baru gunakan fallback
+  const activeGov = governor || currentGovernorSystemFallback(draft); 
+  const generator = generators[activeGov];
+  
+  if (generator) {
+    output.push(...generator({ status, tunable: draft, governor: activeGov }));
+  }
+
+  return output;
+}
+
+// Helper untuk mendeteksi sub-object mana yang sedang aktif dikirim di dalam draft/tunable
+function currentGovernorSystemFallback(draft) {
+  if (!draft) return null;
+  const keys = ["ondemand", "conservative", "schedutil", "userspace"];
+  return keys.find((key) => draft[key] !== undefined);
 }

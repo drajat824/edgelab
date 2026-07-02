@@ -17,50 +17,89 @@ export default function Cpu() {
 
   // Governor & Data Draft
   const [governor, setGovernor] = useState(cpu?.governor);
-  const [draft, setDraft] = useState({});
+  const [freq, setFreq] = useState({ max: cpu?.maxFreq, min: cpu?.minFreq });
+  const [tunable, setTunable] = useState({});
   const [threadDraft, setThreadDraft] = useState(cpu?.thread);
   const [coreDraft, setCoreDraft] = useState(cpu?.core);
 
   // Data asli & Status Perubahan
-  const [originalDraft, setOriginalDraft] = useState({});
-  const [status, setStatus] = useState({});
+  const [originalTunable, setOriginalTunable] = useState({});
+  // 💡 REVISI: Hapus `const [status, setStatus] = useState({})` karena sudah diganti useMemo di bawah!
 
-  // Script/log command
-  const [log, setLog] = useState("");
-  const [log2, setLog2] = useState("");
+  // Script/logTunable command
+  const [logTunable, setLogTunable] = useState("");
+  const [logThreadCore, setLogThreadCore] = useState("");
+  const [logGeneral, setLogGeneral] = useState("");
   const [script, setScript] = useState(cpu?.userspace?.script);
 
   /**
-   * Membandingkan original dengan draft
+   * Membandingkan original dengan tunable
+   * 💡 REVISI: Disederhanakan menjadi hanya 2 argumen karena semua data sudah disatukan ke currentDraft
    */
-  function getChangedFields(original, currentDraft) {
+  function getChangedFields(originalCpu, currentDraft) {
     const changed = {
-      governor: original.governor !== governor,
+      governor: originalCpu?.governor !== currentDraft.governor,
+      thread: originalCpu?.thread !== currentDraft.thread,
+      core: originalCpu?.core !== currentDraft.core,
+      freq: {
+        max:
+          String(originalCpu?.maxFreq ?? "") !==
+          String(currentDraft.freq?.max ?? ""),
+        min:
+          String(originalCpu?.minFreq ?? "") !==
+          String(currentDraft.freq?.min ?? ""),
+      },
     };
 
-    Object.entries(currentDraft).forEach(([key, value]) => {
-      if (key === "governor" || typeof value !== "object" || value === null)
-        return;
+    // Pengecekan khusus untuk parameter di dalam masing-masing governor
+    const governors = [
+      "performance",
+      "conservative",
+      "powersave",
+      "ondemand",
+      "schedutil",
+      "userspace",
+    ];
 
-      changed[key] = {};
-      Object.keys(value).forEach((field) => {
-        changed[key][field] = original[key]?.[field] !== value[field];
+    governors.forEach((govName) => {
+      const govConfig = currentDraft[govName];
+      if (typeof govConfig !== "object" || govConfig === null) return;
+
+      changed[govName] = {};
+      Object.keys(govConfig).forEach((field) => {
+        changed[govName][field] =
+          originalCpu?.[govName]?.[field] !== govConfig[field];
       });
     });
 
     return changed;
   }
 
-  /**
-   * Mengambil data CPU dari Context
-   * Memanfaatkan teknik kloning yang lebih dinamis agar tidak hardcode nama governor
-   */
+  // --- 1. SINKRONISASI DATA DARI CPU CONTEXT ---
+  useEffect(() => {
+    if (!cpu?.governor) return;
+    setGovernor(cpu.governor);
+  }, [cpu?.governor]);
+
+  useEffect(() => {
+    if (!cpu) return;
+    setFreq({ max: cpu.maxFreq, min: cpu.minFreq });
+  }, [cpu?.maxFreq, cpu?.minFreq]);
+
+  useEffect(() => {
+    if (cpu?.thread === undefined) return;
+    setThreadDraft(cpu.thread);
+  }, [cpu?.thread]);
+
+  useEffect(() => {
+    if (cpu?.core === undefined) return;
+    setCoreDraft(cpu.core);
+  }, [cpu?.core]);
+
   useEffect(() => {
     if (!cpu) return;
 
-    // List governor yang di-track secara dinamis
     const governors = [
-      "governor",
       "performance",
       "conservative",
       "powersave",
@@ -69,37 +108,56 @@ export default function Cpu() {
       "userspace",
     ];
     const clone = {};
-
     governors.forEach((gov) => {
       if (cpu[gov] !== undefined) clone[gov] = structuredClone(cpu[gov]);
     });
 
-    setDraft(clone);
-    setOriginalDraft(clone);
-  }, [cpu]);
+    setTunable(clone);
+    setOriginalTunable(clone);
+  }, [
+    cpu?.performance,
+    cpu?.conservative,
+    cpu?.powersave,
+    cpu?.ondemand,
+    cpu?.schedutil,
+    cpu?.userspace,
+  ]);
 
-  /**
-   * Hitung perubahan setiap kali draft atau governor berubah
-   */
-  useEffect(() => {
-    if (!Object.keys(originalDraft).length) return;
-    setStatus(getChangedFields(originalDraft, draft));
-  }, [draft, originalDraft, governor]);
+  // --- 2. PEMBANDING DATA (STATUS PERUBAHAN) ---
+  // 💡 REVISI: Memperbaiki duplikasi deklarasi variabel 'status'
+  const status = useMemo(() => {
+    if (!Object.keys(originalTunable).length || !cpu) return {};
 
-  /**
-   * Status tombol Save.
-   */
+    const currentDraft = {
+      ...tunable,
+      governor,
+      freq,
+      thread: threadDraft,
+      core: coreDraft,
+    };
+
+    return getChangedFields(cpu, currentDraft);
+  }, [cpu, tunable, freq, governor, threadDraft, coreDraft, originalTunable]);
+
+  // --- 3. STATUS TOMBOL SAVE BUTTON ---
   const disabledButton = useMemo(() => {
     return Object.fromEntries(
       Object.entries(status).map(([key, value]) => {
-        if (typeof value === "boolean") return [key, value];
+        // Handle properti top-level berbentuk boolean (governor, freq, thread, core)
+        if (typeof value === "boolean") {
+          const isFreqValid =
+            key !== "freq" || (freq.max !== "" && freq.min !== "");
+          return [key, value && isFreqValid];
+        }
 
+        // Handle konfigurasi internal governor berbentuk objek
+        // 💡 REVISI: Mengubah 'tunablesDraft' yang typo menjadi 'tunable' sesuai deklarasi state atas
         const hasChanged = Object.values(value).some(Boolean);
-        const hasEmpty = Object.entries(draft[key] ?? {}).some(
+        const hasEmpty = Object.entries(tunable[key] ?? {}).some(
           ([fieldKey, fieldValue]) => {
             if (
               key === "userspace" &&
-              !draft.userspace?.isDynamicScripting &&
+              !tunable.userspace?.isDynamicScripting &&
               fieldKey === "script"
             ) {
               return false;
@@ -108,76 +166,107 @@ export default function Cpu() {
           },
         );
 
-        // Menyederhanakan penamaan agar sesuai logika (true berarti tombol AKTIF / bisa diklik)
         return [key, hasChanged && !hasEmpty];
       }),
     );
-  }, [status, draft]);
+  }, [status, tunable, freq]);
 
-  /**
-   * Helper fungsi untuk membungkus pembuatan log command & dispatch
-   */
-  const handleSaveAction = (
-    actionType,
+  // --- 4. ACTION HANDLER FOR SAVE ---
+  const handleSaveAction = ({
+    type,
     payload,
-    customStatus,
-    targetDraft,
-    isLog2 = false,
-  ) => {
+    customStatus = {},
+    targetDraft = {},
+    logTarget = "tunable",
+  }) => {
+    // 💡 PERBAIKAN: Tentukan secara tegas apakah ini aksi kustom (freq, thread, core) atau aksi tunable
+    const isCustom = Object.keys(customStatus).length > 0;
+
+    // Jika kustom, gunakan customStatus utuh. Jika untuk tunable, isolasi hanya status milik governor aktif saat ini.
+    const finalStatus = isCustom
+      ? customStatus
+      : { [governor]: status[governor] }; // Bersih total, hanya membawa objek tunable governor aktif (misal: status.schedutil)
+
     const command = generateCommandFunction({
-      status: { ...status, ...customStatus },
-      ...(targetDraft.threadDraft && { threadDraft: targetDraft.threadDraft }),
-      ...(targetDraft.coreDraft && { coreDraft: targetDraft.coreDraft }),
-      ...(targetDraft.draft && { draft: targetDraft.draft }),
+      status: finalStatus,
+      governor: governor, // 🚀 KIRIM GOVERNOR AKTIF SECARA EKSPLISIT KESINI
+      threadDraft: targetDraft.threadDraft || threadDraft,
+      coreDraft: targetDraft.coreDraft || coreDraft,
+      draft: targetDraft.tunable || tunable,
+      freqDraft: targetDraft.freqDraft || freq,
     });
 
-    if (isLog2) setLog2(command);
-    else setLog(command);
-    dispatch({ type: actionType, payload });
+    const logMappers = {
+      threadCore: setLogThreadCore,
+      general: setLogGeneral,
+      tunable: setLogTunable,
+    };
+
+    if (logMappers[logTarget]) logMappers[logTarget](command);
+    dispatch({ type, payload });
   };
 
   // --- REFACTOR ACTION FUNCTIONS ---
+  const onSaveFrequency = () => {
+    handleSaveAction({
+      type: "CHANGE_GOVERNOR_FREQUENCY",
+      payload: { maxFreq: freq.max, minFreq: freq.min },
+      // 💡 Hanya kirim status frekuensi saat ini
+      customStatus: { freq: status.freq },
+      targetDraft: { freqDraft: freq },
+      logTarget: "general",
+    });
+  };
+  console.log(status);
 
   const onSaveGovernor = () => {
-    handleSaveAction(
-      "CHANGE_GOVERNOR_CONFIG",
-      { governor, config: draft },
-      {},
-      { draft },
-    );
+    handleSaveAction({
+      type: "CHANGE_GOVERNOR_CONFIG",
+      payload: { governor, config: tunable },
+      customStatus: {}, // 💡 Biarkan kosong agar otomatis mengisolasi [governor] saja lewat finalStatus
+      targetDraft: { tunable },
+      logTarget: "tunable",
+    });
   };
 
   const onSaveThread = () => {
-    handleSaveAction(
-      "CHANGE_THREAD_CONFIG",
-      threadDraft,
-      { thread: true },
-      { threadDraft },
-      true,
-    );
+    handleSaveAction({
+      type: "CHANGE_THREAD_CONFIG",
+      payload: threadDraft,
+      // 💡 Hanya kirim status thread, frekuensi dipastikan terbuang secara absolut
+      customStatus: { thread: true },
+      targetDraft: { threadDraft },
+      logTarget: "threadCore",
+    });
   };
 
   const onSaveCore = () => {
-    handleSaveAction(
-      "CHANGE_CORE_CONFIG",
-      coreDraft,
-      { core: true },
-      { coreDraft },
-      true,
-    );
+    handleSaveAction({
+      type: "CHANGE_CORE_CONFIG",
+      payload: coreDraft,
+      // 💡 Hanya kirim status core, frekuensi dipastikan terbuang secara absolut
+      customStatus: { core: true },
+      targetDraft: { coreDraft },
+      logTarget: "threadCore",
+    });
   };
 
   const onChangeGovernor = () => {
-    if (governor !== originalDraft.governor) {
+    // 1. Validasi: Hanya jalankan jika ada perubahan dari sistem
+    if (governor !== cpu?.governor) {
+      // 💡 REVISI: Kirim parameter dengan struktur yang tepat
       const command = generateCommandFunction({
-        status: { ...status, governor: true },
-        draft: { ...draft, governor },
+        status: { governor: true },
+        governor: governor, // 🚀 Kirim governor eksplisit
+        draft: { governor: [governor] },
       });
-      setLog(command);
+
+      setLogGeneral(command);
     }
+
+    // 2. Dispatch perubahan ke reducer
     dispatch({ type: "CHANGE_GOVERNOR", payload: governor });
   };
-
   return (
     <div className="parent h-full">
       <h1 className="text-xtitle">
@@ -196,7 +285,9 @@ export default function Cpu() {
           <p className="text-info">CPU Governor</p>
           <Dropdown
             value={governor}
-            onChange={(e) => setGovernor(e)}
+            onChange={(e) => {
+              (setLogTunable(""), setGovernor(e));
+            }}
             options={[
               "performance",
               "powersave",
@@ -206,19 +297,17 @@ export default function Cpu() {
               "userspace",
             ]}
             width="w-48"
+            actived={status?.governor}
           />
         </div>
         <div className="flex-1 flex flex-col lg:flex-row lg:justify-between lg:items-center">
           {/* Button Change */}
           <button
             onClick={onChangeGovernor}
-            disabled={governor === originalDraft?.governor}
+            disabled={governor === cpu?.governor} // 💡 REVISI: Menggunakan cpu?.governor
             style={{
               color: "white",
-              cursor:
-                governor === originalDraft?.governor
-                  ? "not-allowed"
-                  : "pointer",
+              cursor: governor === cpu?.governor ? "not-allowed" : "pointer", // 💡 REVISI: Menggunakan cpu?.governor
             }}
             className="btn bg-blue-500 hover:bg-blue-700 text-subinfo ml-0 lg:ml-4 disabled:bg-gray-400 disabled:text-gray-600"
           >
@@ -235,93 +324,94 @@ export default function Cpu() {
         </div>
       </div>
 
-      {/* performance  */}
-      {governor == "performance" && (
-        <div>
-          <div className="card flex flex-col gap-5">
-            {/* Label  */}
-            <p className="text-info" style={{ fontWeight: "bold" }}>
-              Performance <span className="text-info">Mode Settings</span>
-            </p>
-            {/* Input */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
-              <div className="flex-none lg:pt-2">
-                <p className="text-info">Scalling Maximum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.performance?.maxFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      performance: { ...prev.performance, maxFreq: e },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "performance"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <div>
-                  <p className="text-warning">
-                    *Available Maximum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
+      {/* Seting Max - Min Frequency */}
+      <div>
+        <div className="card flex flex-col gap-5">
+          {/* Label  */}
+          <p className="text-info" style={{ fontWeight: "bold" }}>
+            Frequency <span className="text-info">Max/Min Settings</span>
+          </p>
+          {/* Input */}
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
+            <div className="flex-none lg:pt-2">
+              <p className="text-info">Maximum Frequency</p>
+            </div>
+            <div className="w-full lg:w-[70%]">
+              {/* Max Freq */}
+              <Dropdown
+                value={freq.max}
+                onChange={(value) => setFreq({ ...freq, max: value })}
+                options={[1.4, 1.7, 2.1]}
+                width="w-full"
+                actived={status?.freq?.max}
+                inCard={true}
+              />
+              <div>
+                <p className="text-warning">
+                  *Available Maximum Frequency: 0.6 - 1.8 GHz
+                </p>
               </div>
             </div>
-            {/* Button  */}
-            <ButtonSave
-              disabled={
-                cpu?.governor != "performance" || !disabledButton?.performance
-              }
-              onClick={onSaveGovernor}
-            />
           </div>
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
+            <div className="flex-none lg:pt-2">
+              <p className="text-info">Minimum Frequency</p>
+            </div>
+            <div className="w-full lg:w-[70%]">
+              <Dropdown
+                value={freq.min}
+                onChange={(value) => setFreq({ ...freq, min: value })}
+                options={[1.4, 1.7, 2.1]}
+                width="w-full"
+                actived={status?.freq?.min}
+                inCard={true}
+              />
+              <div>
+                <p className="text-warning">
+                  *Available Maximum Frequency: 0.6 - 1.8 GHz
+                </p>
+              </div>
+            </div>
+          </div>
+          {/* Button  */}
+          <ButtonSave
+            disabled={!disabledButton?.freq}
+            onClick={onSaveFrequency}
+          />
+        </div>
+      </div>
+
+      {/* Log  */}
+
+      <div className="pb-4">
+        <Log value={logGeneral} />
+      </div>
+
+      {/* performance  */}
+      {governor == "performance" && (
+        <div className="card flex flex-col gap-5">
+          {/* Label  */}
+          <p className="text-info" style={{ fontWeight: "bold" }}>
+            Performance <span className="text-info">Tunable Parameters</span>
+          </p>
+          <p className="text-info">
+            The CPU remains locked at the maximum frequency, delivering peak
+            performance but resulting in increased power consumption.
+          </p>
         </div>
       )}
 
       {/* powersave  */}
       {governor == "powersave" && (
-        <div>
-          <div className="card flex flex-col gap-5">
-            {/* Label  */}
-            <p className="text-info" style={{ fontWeight: "bold" }}>
-              Powersave <span className="text-info">Mode Settings</span>
-            </p>
-            {/* Input */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
-              <div className="flex-none lg:pt-2">
-                <p className="text-info">Scalling Minimum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.powersave?.minFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      powersave: { ...prev.powersave, minFreq: e },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "powersave"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <div>
-                  <p className="text-warning">
-                    *Available Minimum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
-              </div>
-            </div>
-            {/* Button  */}
-            <ButtonSave
-              disabled={
-                cpu?.governor != "powersave" || !disabledButton?.powersave
-              }
-              onClick={onSaveGovernor}
-            />
-          </div>
+        <div className="card flex flex-col gap-5">
+          {/* Label  */}
+          <p className="text-info" style={{ fontWeight: "bold" }}>
+            Powersave <span className="text-info">Tunable Parameters</span>
+          </p>
+          <p className="text-info">
+            The CPU remains locked at the minimum frequency, reducing power
+            consumption at the cost of lower performance.
+          </p>
         </div>
       )}
 
@@ -331,69 +421,58 @@ export default function Cpu() {
           <div className="card flex flex-col gap-5">
             {/* Label  */}
             <p className="text-info" style={{ fontWeight: "bold" }}>
-              Ondemand <span className="text-info">Mode Settings</span>
+              Ondemand <span className="text-info">Tunable Parameters</span>
             </p>
 
-            {/* Max  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none lg:pt-2">
-                <p className="text-info">Scalling Maximum Frequency</p>
+            {/* Sampling Rate  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
+              <div className="flex-none">
+                <p className="text-info">Sampling Rate</p>
               </div>
               <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.ondemand?.maxFreq}
+                <InputWithUnit
+                  disabled={cpu?.governor != "ondemand"}
+                  type="number"
+                  unit="ms"
+                  value={tunable?.ondemand?.samplingRate ?? ""}
+                  actived={status?.ondemand?.samplingRate}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       ondemand: {
                         ...prev.ondemand,
-                        maxFreq: e,
-                        minFreq:
-                          prev?.ondemand?.minFreq > e
-                            ? e
-                            : prev?.ondemand?.minFreq,
+                        samplingRate: Number(e.target.value),
                       },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "ondemand"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
+                  placeholder="Input samping rate"
                 />
-                <div>
-                  <p className="text-warning">
-                    *Available Maximum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
               </div>
             </div>
 
-            {/* Min  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
+            {/* Sampling Down Factor  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
               <div className="flex-none">
-                <p className="text-info">Scalling Minimum Frequency</p>
+                <p className="text-info">Sampling Down Factor</p>
               </div>
               <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.ondemand?.minFreq}
+                <InputWithUnit
+                  disabled={cpu?.governor != "ondemand"}
+                  actived={status?.ondemand?.samplingDownFactor}
+                  type="number"
+                  unit="ms"
+                  value={tunable?.ondemand?.samplingDownFactor ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
-                      ondemand: { ...prev.ondemand, minFreq: e },
+                      ondemand: {
+                        ...prev.ondemand,
+                        samplingDownFactor: Number(e.target.value),
+                      },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1].filter(
-                    (opt) => opt <= (draft?.ondemand?.maxFreq ?? 2.1),
-                  )}
-                  width="w-full"
-                  disabled={cpu?.governor != "ondemand"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
+                  placeholder="Input samping down factor"
                 />
-                <div>
-                  <p className="text-warning">
-                    *Available Minimum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -407,13 +486,14 @@ export default function Cpu() {
                   <p className="text-info flex-1/4 pt-2">Up</p>
                   <div>
                     <InputWithUnit
+                      actived={status?.ondemand?.thresholdUp}
                       disabled={cpu?.governor != "ondemand"}
                       type="number"
                       placeholder="Up Threshold"
                       unit="%"
-                      value={draft?.ondemand?.thresholdUp ?? ""}
+                      value={tunable?.ondemand?.thresholdUp ?? ""}
                       onChange={(e) =>
-                        setDraft((prev) => ({
+                        setTunable((prev) => ({
                           ...prev,
                           ondemand: {
                             ...prev.ondemand,
@@ -422,7 +502,7 @@ export default function Cpu() {
                         }))
                       }
                       onBlur={() => {
-                        setDraft((prev) => {
+                        setTunable((prev) => {
                           let value = Number(prev.ondemand.thresholdUp);
                           if (prev.ondemand.thresholdUp === "") return prev;
                           value = Math.min(100, Math.max(1, value));
@@ -444,13 +524,14 @@ export default function Cpu() {
                   <p className="text-info pt-2 flex-1/4">Down</p>
                   <div>
                     <InputWithUnit
+                      actived={status?.ondemand?.thresholdDown}
                       disabled={cpu?.governor != "ondemand"}
                       type="number"
                       placeholder="Down Threshold"
                       unit="%"
-                      value={draft?.ondemand?.thresholdDown ?? ""}
+                      value={tunable?.ondemand?.thresholdDown ?? ""}
                       onChange={(e) =>
-                        setDraft((prev) => ({
+                        setTunable((prev) => ({
                           ...prev,
                           ondemand: {
                             ...prev.ondemand,
@@ -459,7 +540,7 @@ export default function Cpu() {
                         }))
                       }
                       onBlur={() => {
-                        setDraft((prev) => {
+                        setTunable((prev) => {
                           let value = Number(prev.ondemand.thresholdDown);
                           if (prev.ondemand.thresholdDown === "") return prev;
                           value = Math.min(100, Math.max(1, value));
@@ -479,56 +560,6 @@ export default function Cpu() {
               </div>
             </div>
 
-            {/* Sampling Rate  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-              <div className="flex-none">
-                <p className="text-info">Sampling Rate</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  disabled={cpu?.governor != "ondemand"}
-                  type="number"
-                  unit="ms"
-                  value={draft?.ondemand?.samplingRate ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      ondemand: {
-                        ...prev.ondemand,
-                        samplingRate: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  placeholder="Input samping rate"
-                />
-              </div>
-            </div>
-
-            {/* Sampling Down Factor  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-              <div className="flex-none">
-                <p className="text-info">Sampling Down Factor</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  disabled={cpu?.governor != "ondemand"}
-                  type="number"
-                  unit="ms"
-                  value={draft?.ondemand?.samplingDownFactor ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      ondemand: {
-                        ...prev.ondemand,
-                        samplingDownFactor: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  placeholder="Input samping down factor"
-                />
-              </div>
-            </div>
-
             {/* Ignore Nice Load */}
             <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
               <div className="flex-none">
@@ -537,10 +568,11 @@ export default function Cpu() {
               <div className="w-[70%] flex gap-12">
                 <div className="flex items-center gap-8">
                   <Checkbox
+                    actived={status?.ondemand?.isIgnoreNice}
                     disabled={cpu?.governor != "ondemand"}
-                    checked={draft?.ondemand?.isIgnoreNice ?? false}
+                    checked={tunable?.ondemand?.isIgnoreNice ?? false}
                     onChange={(e) =>
-                      setDraft((prev) => ({
+                      setTunable((prev) => ({
                         ...prev,
                         ondemand: {
                           ...prev.ondemand,
@@ -553,10 +585,11 @@ export default function Cpu() {
                 <div className="flex items-center gap-6">
                   <p className="text-info">I/O Busy</p>
                   <Checkbox
+                    actived={status?.ondemand?.isIoBusy}
                     disabled={cpu?.governor != "ondemand"}
-                    checked={draft?.ondemand?.isIoBusy ?? false}
+                    checked={tunable?.ondemand?.isIoBusy ?? false}
                     onChange={(e) =>
-                      setDraft((prev) => ({
+                      setTunable((prev) => ({
                         ...prev,
                         ondemand: {
                           ...prev.ondemand,
@@ -576,12 +609,13 @@ export default function Cpu() {
               </div>
               <div className="w-full lg:w-[70%]">
                 <InputWithUnit
+                  actived={status?.ondemand?.powerBias}
                   disabled={cpu?.governor != "ondemand"}
                   type="number"
                   unit="%"
-                  value={draft?.ondemand?.powerBias ?? ""}
+                  value={tunable?.ondemand?.powerBias ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       ondemand: {
                         ...prev.ondemand,
@@ -590,7 +624,7 @@ export default function Cpu() {
                     }))
                   }
                   onBlur={() => {
-                    setDraft((prev) => {
+                    setTunable((prev) => {
                       let value = Number(prev.ondemand.powerBias);
                       if (prev.ondemand.powerBias === "") return prev;
                       value = Math.min(100, Math.max(0, value));
@@ -625,74 +659,63 @@ export default function Cpu() {
           <div className="card flex flex-col gap-5">
             {/* Label  */}
             <p className="text-info" style={{ fontWeight: "bold" }}>
-              Conservative <span className="text-info">Mode Settings</span>
+              Conservative <span className="text-info">Tunable Parameters</span>
             </p>
 
-            {/* Max  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Maximum Frequency</p>
+            {/* Sampling Rate  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
+              <div className="flex-none">
+                <p className="text-info">Sampling Rate</p>
               </div>
               <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.conservative?.maxFreq}
+                <InputWithUnit
+                  actived={status?.conservative?.samplingRate}
+                  disabled={cpu?.governor != "conservative"}
+                  type="number"
+                  unit="ms"
+                  value={tunable?.conservative?.samplingRate ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       conservative: {
                         ...prev.conservative,
-                        maxFreq: e,
-                        minFreq:
-                          prev?.conservative?.minFreq > e
-                            ? e
-                            : prev?.conservative?.minFreq,
+                        samplingRate: Number(e.target.value),
                       },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "conservative"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
+                  placeholder="Input samping rate"
                 />
-                <div>
-                  <p className="text-warning">
-                    *Available Maximum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
               </div>
             </div>
 
-            {/* Min  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Minimum Frequency</p>
+            {/* Sampling Down Factor  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
+              <div className="flex-none">
+                <p className="text-info">Sampling Down Factor</p>
               </div>
               <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.conservative?.minFreq}
+                <InputWithUnit
+                  actived={status?.conservative?.samplingDownFactor}
+                  disabled={cpu?.governor != "conservative"}
+                  type="number"
+                  unit="ms"
+                  value={tunable?.conservative?.samplingDownFactor ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
-                      conservative: { ...prev.conservative, minFreq: e },
+                      conservative: {
+                        ...prev.conservative,
+                        samplingDownFactor: Number(e.target.value),
+                      },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1].filter(
-                    (opt) => opt <= (draft?.conservative?.maxFreq ?? 2.1),
-                  )}
-                  width="w-full"
-                  disabled={cpu?.governor != "conservative"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
+                  placeholder="Input samping down factor"
                 />
-                <div>
-                  <p className="text-warning">
-                    *Available Minimum Frequency: 0.6 - 1.8 GHz
-                  </p>
-                </div>
               </div>
             </div>
 
             {/* Threshold  */}
-            <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:justify-between mb-2">
+            <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:justify-between">
               <div className="flex-none pt-2">
                 <p className="text-info">Threshold</p>
               </div>
@@ -701,11 +724,12 @@ export default function Cpu() {
                   <p className="text-info pt-2 flex-1/4">Up</p>
                   <div>
                     <InputWithUnit
+                      actived={status?.conservative?.thresholdUp}
                       disabled={cpu?.governor != "conservative"}
                       type="number"
-                      value={draft?.conservative?.thresholdUp ?? ""}
+                      value={tunable?.conservative?.thresholdUp ?? ""}
                       onChange={(e) =>
-                        setDraft((prev) => ({
+                        setTunable((prev) => ({
                           ...prev,
                           conservative: {
                             ...prev.conservative,
@@ -714,7 +738,7 @@ export default function Cpu() {
                         }))
                       }
                       onBlur={() => {
-                        setDraft((prev) => {
+                        setTunable((prev) => {
                           let value = Number(prev.conservative.thresholdUp);
                           if (prev.conservative.thresholdUp === "") return prev;
                           value = Math.min(100, Math.max(1, value));
@@ -737,11 +761,12 @@ export default function Cpu() {
                   <p className="text-info flex-1/4 pt-2">Down</p>
                   <div>
                     <InputWithUnit
+                      actived={status?.conservative?.thresholdDown}
                       disabled={cpu?.governor != "conservative"}
                       type="number"
-                      value={draft?.conservative?.thresholdDown ?? ""}
+                      value={tunable?.conservative?.thresholdDown ?? ""}
                       onChange={(e) =>
-                        setDraft((prev) => ({
+                        setTunable((prev) => ({
                           ...prev,
                           conservative: {
                             ...prev.conservative,
@@ -750,7 +775,7 @@ export default function Cpu() {
                         }))
                       }
                       onBlur={() => {
-                        setDraft((prev) => {
+                        setTunable((prev) => {
                           let value = Number(prev.conservative.thresholdDown);
                           if (prev.conservative.thresholdDown === "")
                             return prev;
@@ -773,56 +798,6 @@ export default function Cpu() {
               </div>
             </div>
 
-            {/* Sampling Rate  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-              <div className="flex-none">
-                <p className="text-info">Sampling Rate</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  disabled={cpu?.governor != "conservative"}
-                  type="number"
-                  unit="ms"
-                  value={draft?.conservative?.samplingRate ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        samplingRate: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  placeholder="Input samping rate"
-                />
-              </div>
-            </div>
-
-            {/* Sampling Down Factor  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
-              <div className="flex-none">
-                <p className="text-info">Sampling Down Factor</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  disabled={cpu?.governor != "conservative"}
-                  type="number"
-                  unit="ms"
-                  value={draft?.conservative?.samplingDownFactor ?? ""}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        samplingDownFactor: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  placeholder="Input samping down factor"
-                />
-              </div>
-            </div>
-
             {/* Ignore Nice Load */}
             <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:items-center lg:justify-between mb-2">
               <div className="flex-none">
@@ -831,10 +806,11 @@ export default function Cpu() {
               <div className="w-[70%] flex gap-12">
                 <div className="flex items-center gap-8">
                   <Checkbox
+                    actived={status?.conservative?.isIgnoreNice}
                     disabled={cpu?.governor != "conservative"}
-                    checked={draft?.conservative?.isIgnoreNice ?? false}
+                    checked={tunable?.conservative?.isIgnoreNice ?? false}
                     onChange={(e) =>
-                      setDraft((prev) => ({
+                      setTunable((prev) => ({
                         ...prev,
                         conservative: {
                           ...prev.conservative,
@@ -855,12 +831,13 @@ export default function Cpu() {
               </div>
               <div className="w-full lg:w-[70%]">
                 <InputWithUnit
+                  actived={status?.conservative?.frequencyStep}
                   disabled={cpu?.governor != "conservative"}
                   type="number"
                   unit="%"
-                  value={draft?.conservative?.frequencyStep ?? ""}
+                  value={tunable?.conservative?.frequencyStep ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       conservative: {
                         ...prev.conservative,
@@ -869,7 +846,7 @@ export default function Cpu() {
                     }))
                   }
                   onBlur={() => {
-                    setDraft((prev) => {
+                    setTunable((prev) => {
                       let value = Number(prev.conservative.frequencyStep);
                       if (prev.conservative.frequencyStep === "") return prev;
                       value = Math.min(100, Math.max(1, value));
@@ -904,67 +881,8 @@ export default function Cpu() {
           <div className="card flex flex-col gap-5">
             {/* Label  */}
             <p className="text-info" style={{ fontWeight: "bold" }}>
-              Schedutil <span className="text-info">Mode Settings</span>
+              Schedutil <span className="text-info">Tunable Parameters</span>
             </p>
-
-            {/* Max  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Maximum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.schedutil?.maxFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      schedutil: {
-                        ...prev.schedutil,
-                        maxFreq: e,
-                        minFreq:
-                          prev?.schedutil?.minFreq > e
-                            ? e
-                            : prev?.schedutil?.minFreq,
-                      },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "schedutil"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <p className="text-warning">
-                  *Available Maximum Frequency: 0.6 - 1.8 GHz
-                </p>
-              </div>
-            </div>
-
-            {/* Min  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Minimum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.schedutil?.minFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      schedutil: { ...prev.schedutil, minFreq: e },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1].filter(
-                    (opt) => opt <= (draft?.schedutil?.maxFreq ?? 2.1),
-                  )}
-                  width="w-full"
-                  disabled={cpu?.governor != "schedutil"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <p className="text-warning">
-                  *Available Minimum Frequency: 0.6 - 1.8 GHz
-                </p>
-              </div>
-            </div>
 
             {/* Rate Limit  */}
             <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:items-center lg:justify-between">
@@ -973,12 +891,13 @@ export default function Cpu() {
               </div>
               <div className="w-full lg:w-[70%]">
                 <InputWithUnit
+                  actived={status?.schedutil?.rateLimit}
                   disabled={cpu?.governor != "schedutil"}
                   type="number"
                   unit="ms"
-                  value={draft?.schedutil?.rateLimit ?? ""}
+                  value={tunable?.schedutil?.rateLimit ?? ""}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       schedutil: {
                         ...prev.schedutil,
@@ -1007,78 +926,8 @@ export default function Cpu() {
           <div className="card flex flex-col gap-5">
             {/* Label  */}
             <p className="text-info" style={{ fontWeight: "bold" }}>
-              Userspace <span className="text-info">Mode Settings</span>
+              Userspace <span className="text-info">Tunable Parameters</span>
             </p>
-
-            {/* Max  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Maximum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.userspace?.maxFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      userspace: {
-                        ...prev.userspace,
-                        maxFreq: e,
-                        minFreq:
-                          prev?.userspace?.minFreq > e
-                            ? e
-                            : prev?.userspace?.minFreq,
-                        fixedFrequency:
-                          prev?.userspace?.fixedFrequency > e
-                            ? e
-                            : prev?.userspace?.fixedFrequency,
-                      },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1]}
-                  width="w-full"
-                  disabled={cpu?.governor != "userspace"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <p className="text-warning">
-                  *Available Maximum Frequency: 0.6 - 1.8 GHz
-                </p>
-              </div>
-            </div>
-
-            {/* Min  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between mb-5">
-              <div className="flex-none pt-2">
-                <p className="text-info">Scalling Minimum Frequency</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <Dropdown
-                  value={draft?.userspace?.minFreq}
-                  onChange={(e) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      userspace: {
-                        ...prev.userspace,
-                        minFreq: e,
-                        fixedFrequency:
-                          prev?.userspace?.fixedFrequency < e
-                            ? e
-                            : prev?.userspace?.fixedFrequency,
-                      },
-                    }))
-                  }
-                  options={[1.4, 1.7, 2.1].filter(
-                    (opt) => opt <= (draft?.userspace?.maxFreq ?? 2.1),
-                  )}
-                  width="w-full"
-                  disabled={cpu?.governor != "userspace"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
-                />
-                <p className="text-warning">
-                  *Available Minimum Frequency: 0.6 - 1.8 GHz
-                </p>
-              </div>
-            </div>
 
             {/* Fixed Frequency  */}
             <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
@@ -1087,21 +936,22 @@ export default function Cpu() {
               </div>
               <div className="w-full lg:w-[70%]">
                 <Dropdown
-                  value={draft?.userspace?.fixedFrequency}
+                  actived={status?.userspace?.fixedFrequency}
+                  inCard={true}
+                  value={tunable?.userspace?.fixedFrequency}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       userspace: { ...prev.userspace, fixedFrequency: e },
                     }))
                   }
                   options={[1.4, 1.7, 2.1].filter(
                     (opt) =>
-                      opt >= (draft?.userspace?.minFreq ?? 1.4) &&
-                      opt <= (draft?.userspace?.maxFreq ?? 2.1),
+                      opt >= (tunable?.userspace?.minFreq ?? 1.4) &&
+                      opt <= (tunable?.userspace?.maxFreq ?? 2.1),
                   )}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
-                  style={{ border: "1px solid black", borderRadius: "0.5rem" }}
                 />
                 <p className="text-warning">
                   *Available Frequency: 0.6 - 1.8 GHz
@@ -1113,9 +963,9 @@ export default function Cpu() {
               <div className="flex gap-2 items-center">
                 <Checkbox
                   disabled={cpu?.governor != "userspace"}
-                  checked={draft?.userspace?.isDynamicScripting ?? false}
+                  checked={tunable?.userspace?.isDynamicScripting ?? false}
                   onChange={(e) =>
-                    setDraft((prev) => ({
+                    setTunable((prev) => ({
                       ...prev,
                       userspace: {
                         ...prev.userspace,
@@ -1132,14 +982,14 @@ export default function Cpu() {
                 <div className="flex-1">
                   <ScriptEditor
                     disabled={
-                      !draft?.userspace?.isDynamicScripting ||
+                      !tunable?.userspace?.isDynamicScripting ||
                       cpu?.governor != "userspace"
                     }
                     value={script}
                     onChange={setScript}
-                    isDirty={script !== draft?.userspace?.script}
+                    isDirty={script !== tunable?.userspace?.script}
                     onSave={(e) => {
-                      setDraft((prev) => ({
+                      setTunable((prev) => ({
                         ...prev,
                         userspace: {
                           ...prev.userspace,
@@ -1166,7 +1016,7 @@ export default function Cpu() {
       )}
 
       {/* Log  */}
-      <Log value={log} />
+      <Log value={logTunable} />
 
       {/* Thread & Core  */}
       <div className="pt-8">
@@ -1187,6 +1037,7 @@ export default function Cpu() {
               </p>
               <div>
                 <InputWithUnit
+                  actived={status?.thread}
                   type="number"
                   value={threadDraft}
                   onChange={(e) => {
@@ -1240,7 +1091,7 @@ export default function Cpu() {
           </div>
         </div>
 
-        <Log value={log2} />
+        <Log value={logThreadCore} />
       </div>
     </div>
   );
