@@ -387,7 +387,7 @@ export default function Cpu() {
               />
               <div>
                 <p className="text-warning">
-                  *Available Maximum Frequency: 0.6 - 1.8 GHz
+                  *Minimum frequency must be less than or equal to maximum frequency.
                 </p>
               </div>
             </div>
@@ -1009,7 +1009,7 @@ export default function Cpu() {
                   disabled={cpu?.governor != "userspace"}
                 />
                 <p className="text-warning">
-                  *Available Frequency: 0.6 - 1.8 GHz
+                  *Fixed frequency must stay within the specified range.
                 </p>
               </div>
             </div>
