@@ -31,7 +31,7 @@ export const initialState = {
   },
 
   userspace: {
-    fixedFrequency: 1.8,
+    fixedFrequency: 1.4,
     isDynamicScripting: false,
     script: "",
   },

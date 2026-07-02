@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Dropdown from "../components/Dropdown";
 import InputWithUnit from "../components/TextInput";
 import Log from "../components/Log";
@@ -217,7 +217,6 @@ export default function Cpu() {
       logTarget: "general",
     });
   };
-  console.log(status);
 
   const onSaveGovernor = () => {
     handleSaveAction({
@@ -267,6 +266,35 @@ export default function Cpu() {
     // 2. Dispatch perubahan ke reducer
     dispatch({ type: "CHANGE_GOVERNOR", payload: governor });
   };
+
+  const isAutoAdjusting = useRef(false);
+
+  useEffect(() => {
+    if (!cpu || cpu?.governor !== "userspace") return;
+
+    setTunable((prev) => {
+      const value = prev?.userspace?.fixedFrequency;
+      const newFreq = value < cpu?.minFreq ? cpu?.minFreq : value > cpu?.maxFreq ? cpu?.maxFreq : value;
+      if (newFreq === value) return prev;
+      isAutoAdjusting.current = true;
+
+      return {
+        ...prev,
+        userspace: {
+          ...prev.userspace,
+          fixedFrequency: newFreq,
+        },
+      };
+    });
+  }, [cpu?.maxFreq, cpu?.minFreq, cpu?.governor]);
+
+  useEffect(() => {
+    if (!tunable?.userspace?.fixedFrequency) return;
+    if (isAutoAdjusting.current) {
+      onSaveGovernor(); // Eksekusi save otomatis
+      isAutoAdjusting.current = false; // Reset kembali flag-nya
+    }
+  }, [tunable?.userspace?.fixedFrequency]);
   return (
     <div className="parent h-full">
       <h1 className="text-xtitle">
@@ -332,6 +360,39 @@ export default function Cpu() {
             Frequency <span className="text-info">Max/Min Settings</span>
           </p>
           {/* Input */}
+
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
+            <div className="flex-none lg:pt-2">
+              <p className="text-info">Minimum Frequency</p>
+            </div>
+            <div className="w-full lg:w-[70%]">
+              {/* Min Freq  */}
+              <Dropdown
+                value={freq.min}
+                onChange={(value) => {
+                  // const newFix =
+                  //   tunable?.userspace?.fixedFrequency < value
+                  //     ? value
+                  //     : tunable?.userspace?.fixedFrequency;
+                  setFreq({ ...freq, min: value });
+                  // setTunable((prev) => ({
+                  //   ...prev,
+                  //   userspace: { ...prev.userspace, fixedFrequency: newFix },
+                  // }));
+                }}
+                options={[1.4, 1.7, 2.1].filter((opt) => opt <= freq.max)}
+                width="w-full"
+                actived={status?.freq?.min}
+                inCard={true}
+              />
+              <div>
+                <p className="text-warning">
+                  *Available Maximum Frequency: 0.6 - 1.8 GHz
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
             <div className="flex-none lg:pt-2">
               <p className="text-info">Maximum Frequency</p>
@@ -340,7 +401,22 @@ export default function Cpu() {
               {/* Max Freq */}
               <Dropdown
                 value={freq.max}
-                onChange={(value) => setFreq({ ...freq, max: value })}
+                onChange={(value) => {
+                  const newMax = value;
+                  const newMin = freq.min > newMax ? newMax : freq.min;
+                  // const newFix =
+                  //   tunable?.userspace?.fixedFrequency > newMax
+                  //     ? newMax
+                  //     : tunable?.userspace?.fixedFrequency;
+                  setFreq({ min: newMin, max: newMax });
+                  // setTunable((prev) => ({
+                  //   ...prev,
+                  //   userspace: {
+                  //     ...prev.userspace,
+                  //     fixedFrequency: newFix,
+                  //   },
+                  // }));
+                }}
                 options={[1.4, 1.7, 2.1]}
                 width="w-full"
                 actived={status?.freq?.max}
@@ -353,26 +429,7 @@ export default function Cpu() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col lg:flex-row w-full gap-4 lg:justify-between pb-4">
-            <div className="flex-none lg:pt-2">
-              <p className="text-info">Minimum Frequency</p>
-            </div>
-            <div className="w-full lg:w-[70%]">
-              <Dropdown
-                value={freq.min}
-                onChange={(value) => setFreq({ ...freq, min: value })}
-                options={[1.4, 1.7, 2.1]}
-                width="w-full"
-                actived={status?.freq?.min}
-                inCard={true}
-              />
-              <div>
-                <p className="text-warning">
-                  *Available Maximum Frequency: 0.6 - 1.8 GHz
-                </p>
-              </div>
-            </div>
-          </div>
+
           {/* Button  */}
           <ButtonSave
             disabled={!disabledButton?.freq}
@@ -946,9 +1003,7 @@ export default function Cpu() {
                     }))
                   }
                   options={[1.4, 1.7, 2.1].filter(
-                    (opt) =>
-                      opt >= (tunable?.userspace?.minFreq ?? 1.4) &&
-                      opt <= (tunable?.userspace?.maxFreq ?? 2.1),
+                    (opt) => opt >= freq.min && opt <= freq.max,
                   )}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}

@@ -13,19 +13,19 @@ function generateStatus({ status, freqDraft }) {
   const output = [];
   if (!freqDraft) return output;
 
-  if (status?.freq?.max && freqDraft.max) {
-    const maxKHz = parseFloat(freqDraft.max) * 1000000;
-    output.push({
-      label: "Max Frequency",
-      command: `echo ${maxKHz} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`,
-    });
-  }
-
   if (status?.freq?.min && freqDraft.min) {
     const minKHz = parseFloat(freqDraft.min) * 1000000;
     output.push({
       label: "Min Frequency",
       command: `echo ${minKHz} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq`,
+    });
+  }
+
+  if (status?.freq?.max && freqDraft.max) {
+    const maxKHz = parseFloat(freqDraft.max) * 1000000;
+    output.push({
+      label: "Max Frequency",
+      command: `echo ${maxKHz} | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq`,
     });
   }
 
@@ -38,14 +38,14 @@ function generateOndemand({ status, tunable, governor }) {
   if (!config) return output;
 
   const fields = [
-    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
-    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
     { key: "samplingRate", label: "Sampling Rate", path: "sampling_rate" },
     {
       key: "samplingDownFactor",
       label: "Sampling Down Factor",
       path: "sampling_down_factor",
     },
+    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
+    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
     { key: "powerBias", label: "Power Bias", path: "powersave_bias" },
   ];
 
@@ -82,14 +82,14 @@ function generateConservative({ status, tunable, governor }) {
   // 💡 REVISI: Logika ganti governor di sini dihapus karena sudah di-handle global di atas
 
   const fields = [
-    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
-    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
     { key: "samplingRate", label: "Sampling Rate", path: "sampling_rate" },
     {
       key: "samplingDownFactor",
       label: "Sampling Down Factor",
       path: "sampling_down_factor",
     },
+    { key: "thresholdUp", label: "Threshold UP", path: "up_threshold" },
+    { key: "thresholdDown", label: "Threshold Down", path: "down_threshold" },
     { key: "frequencyStep", label: "Frequency Step", path: "freq_step" },
   ];
 
@@ -171,7 +171,7 @@ const generators = {
 
 export function generateCommandFunction({
   status,
-  draft, 
+  draft,
   governor,
   coreDraft,
   threadDraft,
@@ -182,23 +182,23 @@ export function generateCommandFunction({
   // 1. Jika governor sistem yang berubah
   if (status?.governor === true) {
     output.push(...generateGovernor({ status, governor }));
-  } 
-  
+  }
+
   // 2. Jika frekuensi yang berubah
   if (typeof status?.freq === "object" && status.freq !== null) {
     output.push(...generateStatus({ status, freqDraft }));
-  } 
-  
+  }
+
   // 3. Jika core atau thread yang berubah
   if (status?.core === true || status?.thread === true) {
     output.push(...generateAffinity({ status, coreDraft, threadDraft }));
-  } 
+  }
 
   // 4. Jika ada perubahan parameter internal (tunables) milik governor
   // Gunakan governor eksplit dari parameter, jika tidak ada baru gunakan fallback
-  const activeGov = governor || currentGovernorSystemFallback(draft); 
+  const activeGov = governor || currentGovernorSystemFallback(draft);
   const generator = generators[activeGov];
-  
+
   if (generator) {
     output.push(...generator({ status, tunable: draft, governor: activeGov }));
   }
