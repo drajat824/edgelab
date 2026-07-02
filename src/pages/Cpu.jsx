@@ -345,7 +345,14 @@ export default function Cpu() {
                   onChange={(e) =>
                     setDraft((prev) => ({
                       ...prev,
-                      ondemand: { ...prev.ondemand, maxFreq: e },
+                      ondemand: {
+                        ...prev.ondemand,
+                        maxFreq: e,
+                        minFreq:
+                          prev?.ondemand?.minFreq > e
+                            ? e
+                            : prev?.ondemand?.minFreq,
+                      },
                     }))
                   }
                   options={[1.4, 1.7, 2.1]}
@@ -375,7 +382,9 @@ export default function Cpu() {
                       ondemand: { ...prev.ondemand, minFreq: e },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
+                  options={[1.4, 1.7, 2.1].filter(
+                    (opt) => opt <= (draft?.ondemand?.maxFreq ?? 2.1),
+                  )}
                   width="w-full"
                   disabled={cpu?.governor != "ondemand"}
                   style={{ border: "1px solid black", borderRadius: "0.5rem" }}
@@ -630,7 +639,14 @@ export default function Cpu() {
                   onChange={(e) =>
                     setDraft((prev) => ({
                       ...prev,
-                      conservative: { ...prev.conservative, maxFreq: e },
+                      conservative: {
+                        ...prev.conservative,
+                        maxFreq: e,
+                        minFreq:
+                          prev?.conservative?.minFreq > e
+                            ? e
+                            : prev?.conservative?.minFreq,
+                      },
                     }))
                   }
                   options={[1.4, 1.7, 2.1]}
@@ -660,7 +676,9 @@ export default function Cpu() {
                       conservative: { ...prev.conservative, minFreq: e },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
+                  options={[1.4, 1.7, 2.1].filter(
+                    (opt) => opt <= (draft?.conservative?.maxFreq ?? 2.1),
+                  )}
                   width="w-full"
                   disabled={cpu?.governor != "conservative"}
                   style={{ border: "1px solid black", borderRadius: "0.5rem" }}
@@ -900,7 +918,14 @@ export default function Cpu() {
                   onChange={(e) =>
                     setDraft((prev) => ({
                       ...prev,
-                      schedutil: { ...prev.schedutil, maxFreq: e },
+                      schedutil: {
+                        ...prev.schedutil,
+                        maxFreq: e,
+                        minFreq:
+                          prev?.schedutil?.minFreq > e
+                            ? e
+                            : prev?.schedutil?.minFreq,
+                      },
                     }))
                   }
                   options={[1.4, 1.7, 2.1]}
@@ -928,7 +953,9 @@ export default function Cpu() {
                       schedutil: { ...prev.schedutil, minFreq: e },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
+                  options={[1.4, 1.7, 2.1].filter(
+                    (opt) => opt <= (draft?.schedutil?.maxFreq ?? 2.1),
+                  )}
                   width="w-full"
                   disabled={cpu?.governor != "schedutil"}
                   style={{ border: "1px solid black", borderRadius: "0.5rem" }}
@@ -994,7 +1021,18 @@ export default function Cpu() {
                   onChange={(e) =>
                     setDraft((prev) => ({
                       ...prev,
-                      userspace: { ...prev.userspace, maxFreq: e },
+                      userspace: {
+                        ...prev.userspace,
+                        maxFreq: e,
+                        minFreq:
+                          prev?.userspace?.minFreq > e
+                            ? e
+                            : prev?.userspace?.minFreq,
+                        fixedFrequency:
+                          prev?.userspace?.fixedFrequency > e
+                            ? e
+                            : prev?.userspace?.fixedFrequency,
+                      },
                     }))
                   }
                   options={[1.4, 1.7, 2.1]}
@@ -1019,10 +1057,19 @@ export default function Cpu() {
                   onChange={(e) =>
                     setDraft((prev) => ({
                       ...prev,
-                      userspace: { ...prev.userspace, minFreq: e },
+                      userspace: {
+                        ...prev.userspace,
+                        minFreq: e,
+                        fixedFrequency:
+                          prev?.userspace?.fixedFrequency < e
+                            ? e
+                            : prev?.userspace?.fixedFrequency,
+                      },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
+                  options={[1.4, 1.7, 2.1].filter(
+                    (opt) => opt <= (draft?.userspace?.maxFreq ?? 2.1),
+                  )}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
                   style={{ border: "1px solid black", borderRadius: "0.5rem" }}
@@ -1047,7 +1094,11 @@ export default function Cpu() {
                       userspace: { ...prev.userspace, fixedFrequency: e },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1]}
+                  options={[1.4, 1.7, 2.1].filter(
+                    (opt) =>
+                      opt >= (draft?.userspace?.minFreq ?? 1.4) &&
+                      opt <= (draft?.userspace?.maxFreq ?? 2.1),
+                  )}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
                   style={{ border: "1px solid black", borderRadius: "0.5rem" }}
