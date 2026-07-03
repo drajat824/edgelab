@@ -9,6 +9,9 @@ import ScriptEditor from "../components/ScriptEditor";
 import ButtonSave from "../components/ButtonSave";
 import { generateCommandFunction } from "../utils/generateCommand";
 
+// API
+import { cpuService } from "../services/cpuServices";
+
 // State Management
 import useCPU from "../hooks/useCPU";
 
@@ -31,6 +34,43 @@ export default function Cpu() {
   const [logThreadCore, setLogThreadCore] = useState("");
   const [logGeneral, setLogGeneral] = useState("");
   const [script, setScript] = useState(cpu?.userspace?.script);
+
+  // AXIOS
+  useEffect(() => {
+    cpuService
+      .getGovernorStatus()
+      .then((data) => {
+        console.log(data?.tunables);
+
+        dispatch({
+          type: "CHANGE_GOVERNOR",
+          payload: data.governor,
+        });
+
+        dispatch({
+          type: "CHANGE_GOVERNOR_CONFIG",
+          payload: {
+            governor: data.governor,
+            config: {
+              [data?.governor]: {
+                ...data?.tunables,
+              },
+            },
+          },
+        });
+
+        dispatch({
+          type: "CHANGE_GOVERNOR_FREQUENCY",
+          payload: {
+            maxFreq: data.maxFreq,
+            minFreq: data.minFreq,
+          },
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi dengan hardware Linux:", err);
+      });
+  }, [dispatch]);
 
   /**
    * Membandingkan original dengan tunable
@@ -274,7 +314,12 @@ export default function Cpu() {
 
     setTunable((prev) => {
       const value = prev?.userspace?.fixedFrequency;
-      const newFreq = value < cpu?.minFreq ? cpu?.minFreq : value > cpu?.maxFreq ? cpu?.maxFreq : value;
+      const newFreq =
+        value < cpu?.minFreq
+          ? cpu?.minFreq
+          : value > cpu?.maxFreq
+            ? cpu?.maxFreq
+            : value;
       if (newFreq === value) return prev;
       isAutoAdjusting.current = true;
 
@@ -387,7 +432,8 @@ export default function Cpu() {
               />
               <div>
                 <p className="text-warning">
-                  *Minimum frequency must be less than or equal to maximum frequency.
+                  *Minimum frequency must be less than or equal to maximum
+                  frequency.
                 </p>
               </div>
             </div>
@@ -533,6 +579,47 @@ export default function Cpu() {
               </div>
             </div>
 
+            {/* Power Bias  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+              <div className="flex-none pt-2">
+                <p className="text-info">Power Bias</p>
+              </div>
+              <div className="w-full lg:w-[70%]">
+                <InputWithUnit
+                  actived={status?.ondemand?.powerBias}
+                  disabled={cpu?.governor != "ondemand"}
+                  type="number"
+                  unit="%"
+                  value={tunable?.ondemand?.powerBias ?? ""}
+                  onChange={(e) =>
+                    setTunable((prev) => ({
+                      ...prev,
+                      ondemand: {
+                        ...prev.ondemand,
+                        powerBias: e.target.value,
+                      },
+                    }))
+                  }
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.ondemand.powerBias);
+                      if (prev.ondemand.powerBias === "") return prev;
+                      value = Math.min(100, Math.max(0, value));
+                      return {
+                        ...prev,
+                        ondemand: {
+                          ...prev.ondemand,
+                          powerBias: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Input power bias"
+                />
+                <p className="text-warning">*Available: 1 - 100%</p>
+              </div>
+            </div>
+
             {/* Threshold  */}
             <div className="flex flex-col lg:flex-row gap-4 w-full gap-4 lg:justify-between mb-2">
               <div className="flex-none pt-2">
@@ -568,44 +655,6 @@ export default function Cpu() {
                             ondemand: {
                               ...prev.ondemand,
                               thresholdUp: value,
-                            },
-                          };
-                        });
-                      }}
-                    />
-                    <p className="text-warning">*Available: 1 - 100%</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-6">
-                  <p className="text-info pt-2 flex-1/4">Down</p>
-                  <div>
-                    <InputWithUnit
-                      actived={status?.ondemand?.thresholdDown}
-                      disabled={cpu?.governor != "ondemand"}
-                      type="number"
-                      placeholder="Down Threshold"
-                      unit="%"
-                      value={tunable?.ondemand?.thresholdDown ?? ""}
-                      onChange={(e) =>
-                        setTunable((prev) => ({
-                          ...prev,
-                          ondemand: {
-                            ...prev.ondemand,
-                            thresholdDown: e.target.value,
-                          },
-                        }))
-                      }
-                      onBlur={() => {
-                        setTunable((prev) => {
-                          let value = Number(prev.ondemand.thresholdDown);
-                          if (prev.ondemand.thresholdDown === "") return prev;
-                          value = Math.min(100, Math.max(1, value));
-                          return {
-                            ...prev,
-                            ondemand: {
-                              ...prev.ondemand,
-                              thresholdDown: value,
                             },
                           };
                         });
@@ -656,47 +705,6 @@ export default function Cpu() {
                     }
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Power Bias  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
-              <div className="flex-none pt-2">
-                <p className="text-info">Power Bias</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  actived={status?.ondemand?.powerBias}
-                  disabled={cpu?.governor != "ondemand"}
-                  type="number"
-                  unit="%"
-                  value={tunable?.ondemand?.powerBias ?? ""}
-                  onChange={(e) =>
-                    setTunable((prev) => ({
-                      ...prev,
-                      ondemand: {
-                        ...prev.ondemand,
-                        powerBias: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setTunable((prev) => {
-                      let value = Number(prev.ondemand.powerBias);
-                      if (prev.ondemand.powerBias === "") return prev;
-                      value = Math.min(100, Math.max(0, value));
-                      return {
-                        ...prev,
-                        ondemand: {
-                          ...prev.ondemand,
-                          powerBias: value,
-                        },
-                      };
-                    });
-                  }}
-                  placeholder="Input power bias"
-                />
-                <p className="text-warning">*Available: 1 - 100%</p>
               </div>
             </div>
 
@@ -768,6 +776,47 @@ export default function Cpu() {
                   }
                   placeholder="Input samping down factor"
                 />
+              </div>
+            </div>
+
+            {/* Frequency Step  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+              <div className="flex-none pt-2">
+                <p className="text-info">Frequency Step</p>
+              </div>
+              <div className="w-full lg:w-[70%]">
+                <InputWithUnit
+                  actived={status?.conservative?.frequencyStep}
+                  disabled={cpu?.governor != "conservative"}
+                  type="number"
+                  unit="%"
+                  value={tunable?.conservative?.frequencyStep ?? ""}
+                  onChange={(e) =>
+                    setTunable((prev) => ({
+                      ...prev,
+                      conservative: {
+                        ...prev.conservative,
+                        frequencyStep: e.target.value,
+                      },
+                    }))
+                  }
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.conservative.frequencyStep);
+                      if (prev.conservative.frequencyStep === "") return prev;
+                      value = Math.min(100, Math.max(1, value));
+                      return {
+                        ...prev,
+                        conservative: {
+                          ...prev.conservative,
+                          frequencyStep: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Input frequency step"
+                />
+                <p className="text-warning">*Available: 1 - 100%</p>
               </div>
             </div>
 
@@ -878,47 +927,6 @@ export default function Cpu() {
                     }
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Frequency Step  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
-              <div className="flex-none pt-2">
-                <p className="text-info">Frequency Step</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  actived={status?.conservative?.frequencyStep}
-                  disabled={cpu?.governor != "conservative"}
-                  type="number"
-                  unit="%"
-                  value={tunable?.conservative?.frequencyStep ?? ""}
-                  onChange={(e) =>
-                    setTunable((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        frequencyStep: e.target.value,
-                      },
-                    }))
-                  }
-                  onBlur={() => {
-                    setTunable((prev) => {
-                      let value = Number(prev.conservative.frequencyStep);
-                      if (prev.conservative.frequencyStep === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
-                      return {
-                        ...prev,
-                        conservative: {
-                          ...prev.conservative,
-                          frequencyStep: value,
-                        },
-                      };
-                    });
-                  }}
-                  placeholder="Input frequency step"
-                />
-                <p className="text-warning">*Available: 1 - 100%</p>
               </div>
             </div>
 

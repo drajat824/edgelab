@@ -1,37 +1,36 @@
 export const initialState = {
   governor: "performance",
 
-  thread: 4,
-  core: [0, 1, 2, 3],
+  thread: null,
+  core: [],
 
-  maxFreq: 2.1,
-  minFreq: 1.4,
+  maxFreq: null,
+  minFreq: null,
 
   ondemand: {
-    thresholdUp: 85,
-    thresholdDown: 50,
-    samplingRate: 20000,
-    samplingDownFactor: 1,
+    thresholdUp: null,
+    samplingRate: null,
+    samplingDownFactor: null,
     isIgnoreNice: false,
     isIoBusy: false,
     powerBias: 0,
   },
 
   conservative: {
-    thresholdUp: 80,
-    thresholdDown: 20,
-    samplingRate: 200000,
-    samplingDownFactor: 1,
+    thresholdUp: null,
+    thresholdDown: null,
+    samplingRate: null,
+    samplingDownFactor: null,
     isIgnoreNice: false,
-    frequencyStep: 5,
+    frequencyStep: null,
   },
 
   schedutil: {
-    rateLimit: 2000,
+    rateLimit: null,
   },
 
   userspace: {
-    fixedFrequency: 1.4,
+    fixedFrequency: null,
     isDynamicScripting: false,
     script: "",
   },
