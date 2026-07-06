@@ -13,6 +13,7 @@ export default function Dropdown({
   actived = false,
   inCard = false,
   capslock = true,
+  unit = "",
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef();
@@ -35,11 +36,12 @@ export default function Dropdown({
         onClick={() => setOpen(!open)}
         disabled={disabled}
         className={`flex justify-between items-center gap-4 rounded-lg card-dorpdown cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed h-[45px] transition-colors duration-200 border-[1px] 
-    ${actived ? "border-blue-500" : inCard? 'border-black' : "border-transparent"}`}>
+    ${actived ? "border-blue-500" : inCard ? "border-black" : "border-transparent"}`}
+      >
         <span
           className={`${capslock && "uppercase"} truncate ${actived ? "text-blue-500" : "text-gray-700"}`}
         >
-          {value || "Select..."}
+          {value + ` ${unit}` || "Select..."}
         </span>
         <img
           src={actived ? DropdownActive : DropdownIcon}
@@ -63,19 +65,13 @@ export default function Dropdown({
                   setOpen(false);
                 }}
                 disabled={disabled}
-                /* 
-                                  2. Logika Class Baru:
-                                  - Semua item punya efek `hover:bg-[var(--menu)] hover:text-white`.
-                                  - Jika `isSelected` true, kita beri warna dasar aktif.
-                                  - Triknya: Kita tambahkan `group-hover:bg-transparent group-hover:text-inherit` agar saat dropdown mendeteksi ada hover di areanya, warna item yang selected otomatis mengalah (jadi transparan), KECUALI item selected itu sendiri yang sedang di-hover (`hover:bg-[var(--menu)]`).
-                                */
                 className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 ${capslock && "uppercase"} hover:bg-[var(--menu)] hover:text-white ${
                   isSelected
                     ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white"
                     : "text-current"
                 }`}
               >
-                <p className="truncate">{opt}</p>
+                <p className="truncate">{opt + ` ${unit}`}</p>
               </button>
             );
           })}

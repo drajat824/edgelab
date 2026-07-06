@@ -487,7 +487,7 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               {/* Min Freq  */}
               <Dropdown
-                value={freq.min + " GHz"}
+                value={freq.min}
                 onChange={(value) => {
                   setFreq({ ...freq, min: value });
                 }}
@@ -496,6 +496,7 @@ export default function Cpu() {
                 actived={status?.freq?.min}
                 inCard={true}
                 capslock={false}
+                unit = 'GHz'
               />
               <div>
                 <p className="text-warning">
@@ -513,7 +514,7 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               {/* Max Freq */}
               <Dropdown
-                value={freq.max + " GHz"}
+                value={freq.max}
                 onChange={(value) => {
                   const newMax = value;
                   const newMin = freq.min > newMax ? newMax : freq.min;
@@ -524,6 +525,7 @@ export default function Cpu() {
                 actived={status?.freq?.max}
                 inCard={true}
                 capslock={false}
+                unit = 'GHz'
               />
               <div>
                 <p className="text-warning">
@@ -1144,7 +1146,7 @@ export default function Cpu() {
                 <Dropdown
                   actived={status?.userspace?.fixedFrequency}
                   inCard={true}
-                  value={tunable?.userspace?.fixedFrequency + " GHz"}
+                  value={tunable?.userspace?.fixedFrequency}
                   onChange={(e) =>
                     setTunable((prev) => ({
                       ...prev,
@@ -1157,6 +1159,7 @@ export default function Cpu() {
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
                   capslock={false}
+                  unit = 'GHz'
                 />
                 <p className="text-warning">
                   *Fixed frequency must stay within the specified range (min -
@@ -1222,7 +1225,7 @@ export default function Cpu() {
       )}
 
       {/* Log  */}
-      <Log value={logTunable} />
+      {governor != "performance" && governor != "powersave" && <Log value={logTunable} />}
 
       {/* Thread & Core  */}
       <div className="pt-8">
