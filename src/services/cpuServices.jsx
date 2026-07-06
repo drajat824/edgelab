@@ -11,30 +11,31 @@ export const cpuService = {
   },
 
   // POST - GANTI GOVERNOR
-  updateGovernor: async (governorName) => {
+  updateGovernor: async ({ governor }) => {
     try {
-      return await api.post("/api/cpu/governor", { governor: governorName });
+      return await api.post("/api/cpu/governor", { governor: governor });
     } catch (error) {
       throw error;
     }
   },
 
-   // POST - GANTI FREKUENSI
-  updateGovernor: async ({minFreq, maxFreq}) => {
+  // POST - GANTI FREKUENSI
+  updateFrequency: async ({ minFreq, maxFreq }) => {
     try {
-      return await api.post("/api/cpu/frequency", { minFreq: minFreq, maxFreq: maxFreq });
+      return await api.post("/api/cpu/frequency", {
+        minFreq: minFreq,
+        maxFreq: maxFreq,
+      });
     } catch (error) {
       throw error;
     }
   },
 
   // POST - GANTI PARAMETER GOVERNOR
-  updateGovernorParams: async (activeGovernor, paramsData) => {
+  updateGovernorParams: async (paramsData) => {
+    console.log(paramsData, "PARAMSDATA")
     try {
-      const payload = {
-        [activeGovernor]: paramsData,
-      };
-      return await api.post("/api/cpu/governor/params", payload);
+      return await api.post("/api/cpu/governor/params", paramsData);
     } catch (error) {
       throw error;
     }

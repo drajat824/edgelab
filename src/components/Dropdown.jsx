@@ -11,7 +11,8 @@ export default function Dropdown({
   width = "w-fit",
   style = {},
   actived = false,
-  inCard = false
+  inCard = false,
+  capslock = true,
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef();
@@ -36,7 +37,7 @@ export default function Dropdown({
         className={`flex justify-between items-center gap-4 rounded-lg card-dorpdown cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed h-[45px] transition-colors duration-200 border-[1px] 
     ${actived ? "border-blue-500" : inCard? 'border-black' : "border-transparent"}`}>
         <span
-          className={`uppercase truncate ${actived ? "text-blue-500" : "text-gray-700"}`}
+          className={`${capslock && "uppercase"} truncate ${actived ? "text-blue-500" : "text-gray-700"}`}
         >
           {value || "Select..."}
         </span>
@@ -68,7 +69,7 @@ export default function Dropdown({
                                   - Jika `isSelected` true, kita beri warna dasar aktif.
                                   - Triknya: Kita tambahkan `group-hover:bg-transparent group-hover:text-inherit` agar saat dropdown mendeteksi ada hover di areanya, warna item yang selected otomatis mengalah (jadi transparan), KECUALI item selected itu sendiri yang sedang di-hover (`hover:bg-[var(--menu)]`).
                                 */
-                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 uppercase hover:bg-[var(--menu)] hover:text-white ${
+                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 ${capslock && "uppercase"} hover:bg-[var(--menu)] hover:text-white ${
                   isSelected
                     ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white"
                     : "text-current"

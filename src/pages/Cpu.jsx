@@ -17,6 +17,7 @@ import useCPU from "../hooks/useCPU";
 
 export default function Cpu() {
   const { cpu, dispatch } = useCPU();
+  const freqRange = JSON.parse(import.meta.env.VITE_FREQ_RANGE);
 
   // Governor & Data Draft
   const [governor, setGovernor] = useState(cpu?.governor);
@@ -27,7 +28,6 @@ export default function Cpu() {
 
   // Data asli & Status Perubahan
   const [originalTunable, setOriginalTunable] = useState({});
-  // 💡 REVISI: Hapus `const [status, setStatus] = useState({})` karena sudah diganti useMemo di bawah!
 
   // Script/logTunable command
   const [logTunable, setLogTunable] = useState("");
@@ -72,10 +72,7 @@ export default function Cpu() {
       });
   }, [dispatch]);
 
-  /**
-   * Membandingkan original dengan tunable
-   * 💡 REVISI: Disederhanakan menjadi hanya 2 argumen karena semua data sudah disatukan ke currentDraft
-   */
+  // Input mana yang berubah
   function getChangedFields(originalCpu, currentDraft) {
     const changed = {
       governor: originalCpu?.governor !== currentDraft.governor,
@@ -163,8 +160,7 @@ export default function Cpu() {
     cpu?.userspace,
   ]);
 
-  // --- 2. PEMBANDING DATA (STATUS PERUBAHAN) ---
-  // 💡 REVISI: Memperbaiki duplikasi deklarasi variabel 'status'
+  // Banding Data
   const status = useMemo(() => {
     if (!Object.keys(originalTunable).length || !cpu) return {};
 
@@ -247,27 +243,119 @@ export default function Cpu() {
   };
 
   // --- REFACTOR ACTION FUNCTIONS ---
-  const onSaveFrequency = () => {
-    handleSaveAction({
-      type: "CHANGE_GOVERNOR_FREQUENCY",
-      payload: { maxFreq: freq.max, minFreq: freq.min },
-      // 💡 Hanya kirim status frekuensi saat ini
-      customStatus: { freq: status.freq },
-      targetDraft: { freqDraft: freq },
-      logTarget: "general",
-    });
+  const onSaveFrequency = async () => {
+    try {
+      const data = await cpuService.updateFrequency({
+        minFreq: freq.min,
+        maxFreq: freq.max,
+      });
+
+      if (data && data.status === "success") {
+        handleSaveAction({
+          type: "CHANGE_GOVERNOR_FREQUENCY",
+          payload: {
+            maxFreq: data.maxFreq,
+            minFreq: data.minFreq,
+          },
+          customStatus: { freq: status.freq },
+          targetDraft: { freqDraft: freq },
+          logTarget: "general",
+        });
+        console.log("✓ Frekuensi CPU berhasil diperbarui di hardware Linux.");
+      } else {
+        console.error("Gagal memperbarui frekuensi melalui API:", data?.detail);
+      }
+    } catch (error) {
+      console.error("Error saat mengeksekusi updateFrequency:", error);
+    }
   };
 
-  const onSaveGovernor = () => {
-    handleSaveAction({
-      type: "CHANGE_GOVERNOR_CONFIG",
-      payload: { governor, config: tunable },
-      customStatus: {}, // 💡 Biarkan kosong agar otomatis mengisolasi [governor] saja lewat finalStatus
-      targetDraft: { tunable },
-      logTarget: "tunable",
-    });
+  const onSaveGovernor = async () => {
+    try {
+      const response = await cpuService.updateGovernorParams(
+        tunable[cpu?.governor],
+      );
+      const data = response?.data || response;
+      console.log(data, "data");
+
+      if (data && data.status === "success") {
+        handleSaveAction({
+          type: "CHANGE_GOVERNOR_CONFIG",
+          payload: { governor, config: tunable },
+          customStatus: {},
+          targetDraft: { tunable },
+          logTarget: "tunable",
+        });
+
+        handleSaveAction({
+          type: "CHANGE_GOVERNOR_CONFIG",
+          payload: {
+            governor: data.governor,
+            config: {
+              [data?.governor]: {
+                ...data?.tunables,
+              },
+            },
+          },
+          customStatus: {},
+          targetDraft: { tunable },
+          logTarget: "tunable",
+        });
+
+        console.log(
+          `✓ Parameter untuk governor ${data.governor.toUpperCase()} berhasil diterapkan.`,
+        );
+      } else {
+        console.error(
+          "Gagal memperbarui parameter governor melalui API:",
+          data?.detail,
+        );
+      }
+    } catch (error) {
+      console.error("Error saat mengeksekusi updateGovernorParams:", error);
+    }
   };
 
+  const onChangeGovernor = async () => {
+    if (governor !== cpu?.governor) {
+      const command = generateCommandFunction({
+        status: { governor: true },
+        governor: governor,
+        draft: { governor: governor },
+      });
+      setLogGeneral(command);
+
+      try {
+        const data = await cpuService.updateGovernor({ governor: governor });
+        if (data && data.status === "success") {
+          dispatch({
+            type: "CHANGE_GOVERNOR_CONFIG",
+            payload: {
+              governor: data.governor,
+              config: {
+                [data?.governor]: {
+                  ...data?.tunables,
+                },
+              },
+            },
+          });
+          dispatch({
+            type: "CHANGE_GOVERNOR",
+            payload: data.governor,
+          });
+        } else {
+          console.error(
+            "Gagal memperbarui governor melalui updateGovernor:",
+            data?.detail,
+          );
+        }
+      } catch (error) {
+        console.error("Error saat mengeksekusi updateGovernor:", error);
+      }
+    }
+  };
+
+  // BELUM DITERAPKAN AXIOS
   const onSaveThread = () => {
     handleSaveAction({
       type: "CHANGE_THREAD_CONFIG",
@@ -290,22 +378,7 @@ export default function Cpu() {
     });
   };
 
-  const onChangeGovernor = () => {
-    // 1. Validasi: Hanya jalankan jika ada perubahan dari sistem
-    if (governor !== cpu?.governor) {
-      // 💡 REVISI: Kirim parameter dengan struktur yang tepat
-      const command = generateCommandFunction({
-        status: { governor: true },
-        governor: governor, // 🚀 Kirim governor eksplisit
-        draft: { governor: [governor] },
-      });
-
-      setLogGeneral(command);
-    }
-
-    // 2. Dispatch perubahan ke reducer
-    dispatch({ type: "CHANGE_GOVERNOR", payload: governor });
-  };
+  // Adjust CPU Min !> Max
 
   const isAutoAdjusting = useRef(false);
 
@@ -340,6 +413,7 @@ export default function Cpu() {
       isAutoAdjusting.current = false; // Reset kembali flag-nya
     }
   }, [tunable?.userspace?.fixedFrequency]);
+
   return (
     <div className="parent h-full">
       <h1 className="text-xtitle">
@@ -413,22 +487,15 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               {/* Min Freq  */}
               <Dropdown
-                value={freq.min}
+                value={freq.min + " GHz"}
                 onChange={(value) => {
-                  // const newFix =
-                  //   tunable?.userspace?.fixedFrequency < value
-                  //     ? value
-                  //     : tunable?.userspace?.fixedFrequency;
                   setFreq({ ...freq, min: value });
-                  // setTunable((prev) => ({
-                  //   ...prev,
-                  //   userspace: { ...prev.userspace, fixedFrequency: newFix },
-                  // }));
                 }}
-                options={[1.4, 1.7, 2.1].filter((opt) => opt <= freq.max)}
+                options={freqRange.filter((opt) => opt <= freq.max)}
                 width="w-full"
                 actived={status?.freq?.min}
                 inCard={true}
+                capslock={false}
               />
               <div>
                 <p className="text-warning">
@@ -446,27 +513,17 @@ export default function Cpu() {
             <div className="w-full lg:w-[70%]">
               {/* Max Freq */}
               <Dropdown
-                value={freq.max}
+                value={freq.max + " GHz"}
                 onChange={(value) => {
                   const newMax = value;
                   const newMin = freq.min > newMax ? newMax : freq.min;
-                  // const newFix =
-                  //   tunable?.userspace?.fixedFrequency > newMax
-                  //     ? newMax
-                  //     : tunable?.userspace?.fixedFrequency;
                   setFreq({ min: newMin, max: newMax });
-                  // setTunable((prev) => ({
-                  //   ...prev,
-                  //   userspace: {
-                  //     ...prev.userspace,
-                  //     fixedFrequency: newFix,
-                  //   },
-                  // }));
                 }}
-                options={[1.4, 1.7, 2.1]}
+                options={freqRange}
                 width="w-full"
                 actived={status?.freq?.max}
                 inCard={true}
+                capslock={false}
               />
               <div>
                 <p className="text-warning">
@@ -536,7 +593,7 @@ export default function Cpu() {
                 <InputWithUnit
                   disabled={cpu?.governor != "ondemand"}
                   type="number"
-                  unit="ms"
+                  unit="µs"
                   value={tunable?.ondemand?.samplingRate ?? ""}
                   actived={status?.ondemand?.samplingRate}
                   onChange={(e) =>
@@ -548,8 +605,23 @@ export default function Cpu() {
                       },
                     }))
                   }
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.ondemand.samplingRate);
+                      if (prev.ondemand.samplingRate === "") return prev;
+                      value = Math.max(2000, value);
+                      return {
+                        ...prev,
+                        ondemand: {
+                          ...prev.ondemand,
+                          samplingRate: value,
+                        },
+                      };
+                    });
+                  }}
                   placeholder="Input samping rate"
                 />
+                <p className="text-warning">*Minimum sampling rate: 2000µs</p>
               </div>
             </div>
 
@@ -563,7 +635,7 @@ export default function Cpu() {
                   disabled={cpu?.governor != "ondemand"}
                   actived={status?.ondemand?.samplingDownFactor}
                   type="number"
-                  unit="ms"
+                  unit=""
                   value={tunable?.ondemand?.samplingDownFactor ?? ""}
                   onChange={(e) =>
                     setTunable((prev) => ({
@@ -574,8 +646,23 @@ export default function Cpu() {
                       },
                     }))
                   }
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.ondemand.samplingDownFactor);
+                      if (prev.ondemand.samplingDownFactor === "") return prev;
+                      value = Math.max(1, value);
+                      return {
+                        ...prev,
+                        ondemand: {
+                          ...prev.ondemand,
+                          samplingDownFactor: value,
+                        },
+                      };
+                    });
+                  }}
                   placeholder="Input samping down factor"
                 />
+                <p className="text-warning">*Minimum sampling down factor: 1</p>
               </div>
             </div>
 
@@ -589,7 +676,7 @@ export default function Cpu() {
                   actived={status?.ondemand?.powerBias}
                   disabled={cpu?.governor != "ondemand"}
                   type="number"
-                  unit="%"
+                  unit="‰"
                   value={tunable?.ondemand?.powerBias ?? ""}
                   onChange={(e) =>
                     setTunable((prev) => ({
@@ -604,7 +691,7 @@ export default function Cpu() {
                     setTunable((prev) => {
                       let value = Number(prev.ondemand.powerBias);
                       if (prev.ondemand.powerBias === "") return prev;
-                      value = Math.min(100, Math.max(0, value));
+                      value = Math.min(1000, Math.max(0, value));
                       return {
                         ...prev,
                         ondemand: {
@@ -616,7 +703,7 @@ export default function Cpu() {
                   }}
                   placeholder="Input power bias"
                 />
-                <p className="text-warning">*Available: 1 - 100%</p>
+                <p className="text-warning">*Available: 0 - 1000‰</p>
               </div>
             </div>
 
@@ -737,7 +824,7 @@ export default function Cpu() {
                   actived={status?.conservative?.samplingRate}
                   disabled={cpu?.governor != "conservative"}
                   type="number"
-                  unit="ms"
+                  unit="µs"
                   value={tunable?.conservative?.samplingRate ?? ""}
                   onChange={(e) =>
                     setTunable((prev) => ({
@@ -749,7 +836,23 @@ export default function Cpu() {
                     }))
                   }
                   placeholder="Input samping rate"
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.conservative.samplingRate);
+                      if (prev.conservative.samplingRate === "") return prev;
+                      value = Math.max(2000, value);
+                      return {
+                        ...prev,
+                        conservative: {
+                          ...prev.conservative,
+                          samplingRate: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Input samping rate"
                 />
+                <p className="text-warning">*Minimum sampling rate: 2000µs</p>
               </div>
             </div>
 
@@ -763,7 +866,7 @@ export default function Cpu() {
                   actived={status?.conservative?.samplingDownFactor}
                   disabled={cpu?.governor != "conservative"}
                   type="number"
-                  unit="ms"
+                  unit=""
                   value={tunable?.conservative?.samplingDownFactor ?? ""}
                   onChange={(e) =>
                     setTunable((prev) => ({
@@ -775,48 +878,26 @@ export default function Cpu() {
                     }))
                   }
                   placeholder="Input samping down factor"
-                />
-              </div>
-            </div>
-
-            {/* Frequency Step  */}
-            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
-              <div className="flex-none pt-2">
-                <p className="text-info">Frequency Step</p>
-              </div>
-              <div className="w-full lg:w-[70%]">
-                <InputWithUnit
-                  actived={status?.conservative?.frequencyStep}
-                  disabled={cpu?.governor != "conservative"}
-                  type="number"
-                  unit="%"
-                  value={tunable?.conservative?.frequencyStep ?? ""}
-                  onChange={(e) =>
-                    setTunable((prev) => ({
-                      ...prev,
-                      conservative: {
-                        ...prev.conservative,
-                        frequencyStep: e.target.value,
-                      },
-                    }))
-                  }
                   onBlur={() => {
                     setTunable((prev) => {
-                      let value = Number(prev.conservative.frequencyStep);
-                      if (prev.conservative.frequencyStep === "") return prev;
-                      value = Math.min(100, Math.max(1, value));
+                      let value = Number(prev.conservative.samplingDownFactor);
+                      if (prev.conservative.samplingDownFactor === "")
+                        return prev;
+                      value = Math.min(10, Math.max(1, value));
                       return {
                         ...prev,
                         conservative: {
                           ...prev.conservative,
-                          frequencyStep: value,
+                          samplingDownFactor: value,
                         },
                       };
                     });
                   }}
-                  placeholder="Input frequency step"
+                  placeholder="Input samping rate"
                 />
-                <p className="text-warning">*Available: 1 - 100%</p>
+                <p className="text-warning">
+                  *Available sampling down factor: 1- 10
+                </p>
               </div>
             </div>
 
@@ -826,9 +907,10 @@ export default function Cpu() {
                 <p className="text-info">Threshold</p>
               </div>
               <div className="bng-red-100 w-full lg:w-[70%] flex flex-col lg:flex-row lg:justify-between gap-4">
+                {/* INPUT UP THRESHOLD */}
                 <div className="flex gap-6">
-                  <p className="text-info pt-2 flex-1/4">Up</p>
-                  <div>
+                  <p className="text-info pt-2 w-15">Up</p>
+                  <div className="w-full">
                     <InputWithUnit
                       actived={status?.conservative?.thresholdUp}
                       disabled={cpu?.governor != "conservative"}
@@ -845,7 +927,12 @@ export default function Cpu() {
                       }
                       onBlur={() => {
                         setTunable((prev) => {
-                          let value = Number(prev.conservative.thresholdUp);
+                          let value = Number(
+                            prev.conservative.thresholdUp <=
+                              prev.conservative.thresholdDown
+                              ? Math.max(1, prev.conservative.thresholdDown + 1)
+                              : prev.conservative.thresholdUp,
+                          );
                           if (prev.conservative.thresholdUp === "") return prev;
                           value = Math.min(100, Math.max(1, value));
                           return {
@@ -860,12 +947,16 @@ export default function Cpu() {
                       placeholder="Up Threshold"
                       unit="%"
                     />
-                    <p className="text-warning">*Available: 1 - 100%</p>
+                    <p className="text-warning">
+                      *Must be between 1 - 100% and greater than Threshold Down
+                    </p>
                   </div>
                 </div>
+
+                {/* INPUT DOWN THRESHOLD */}
                 <div className="flex gap-6">
-                  <p className="text-info flex-1/4 pt-2">Down</p>
-                  <div>
+                  <p className="text-info pt-2 w-15">Down</p>
+                  <div className="w-full">
                     <InputWithUnit
                       actived={status?.conservative?.thresholdDown}
                       disabled={cpu?.governor != "conservative"}
@@ -882,7 +973,13 @@ export default function Cpu() {
                       }
                       onBlur={() => {
                         setTunable((prev) => {
-                          let value = Number(prev.conservative.thresholdDown);
+                          let value = Number(
+                            prev.conservative.thresholdDown >=
+                              prev.conservative.thresholdUp
+                              ? Math.max(1, prev.conservative.thresholdUp - 1)
+                              : prev.conservative.thresholdDown,
+                          );
+
                           if (prev.conservative.thresholdDown === "")
                             return prev;
                           value = Math.min(100, Math.max(1, value));
@@ -898,9 +995,53 @@ export default function Cpu() {
                       placeholder="Down Threshold"
                       unit="%"
                     />
-                    <p className="text-warning">*Available: 1 - 100%</p>
+                    <p className="text-warning">
+                      *Must be between 1 - 100% and less than Threshold Up
+                    </p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Frequency Step  */}
+            <div className="flex flex-col lg:flex-row w-full gap-4 w-full gap-4 lg:justify-between">
+              <div className="flex-none pt-2">
+                <p className="text-info">Frequency Step</p>
+              </div>
+              <div className="w-full lg:w-[70%]">
+                <InputWithUnit
+                  disabled={cpu?.governor != "conservative"}
+                  actived={status?.conservative?.frequencyStep}
+                  type="number"
+                  unit="%"
+                  value={tunable?.conservative?.frequencyStep ?? ""}
+                  onChange={(e) =>
+                    setTunable((prev) => ({
+                      ...prev,
+                      conservative: {
+                        ...prev.conservative,
+                        frequencyStep: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Input frequency step"
+                  onBlur={() => {
+                    setTunable((prev) => {
+                      let value = Number(prev.conservative.frequencyStep);
+                      if (prev.conservative.frequencyStep === "") return prev;
+                      value = Math.min(100, Math.max(0, value));
+                      return {
+                        ...prev,
+                        conservative: {
+                          ...prev.conservative,
+                          frequencyStep: value,
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="Input samping rate"
+                />
+                <p className="text-warning">*Available: 0 - 100%</p>
               </div>
             </div>
 
@@ -959,14 +1100,14 @@ export default function Cpu() {
                   actived={status?.schedutil?.rateLimit}
                   disabled={cpu?.governor != "schedutil"}
                   type="number"
-                  unit="ms"
+                  unit="µs"
                   value={tunable?.schedutil?.rateLimit ?? ""}
                   onChange={(e) =>
                     setTunable((prev) => ({
                       ...prev,
                       schedutil: {
                         ...prev.schedutil,
-                        rateLimit: Number(e.target.value),
+                        rateLimit: e.target.value,
                       },
                     }))
                   }
@@ -1003,21 +1144,23 @@ export default function Cpu() {
                 <Dropdown
                   actived={status?.userspace?.fixedFrequency}
                   inCard={true}
-                  value={tunable?.userspace?.fixedFrequency}
+                  value={tunable?.userspace?.fixedFrequency + " GHz"}
                   onChange={(e) =>
                     setTunable((prev) => ({
                       ...prev,
                       userspace: { ...prev.userspace, fixedFrequency: e },
                     }))
                   }
-                  options={[1.4, 1.7, 2.1].filter(
+                  options={freqRange.filter(
                     (opt) => opt >= freq.min && opt <= freq.max,
                   )}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
+                  capslock={false}
                 />
                 <p className="text-warning">
-                  *Fixed frequency must stay within the specified range.
+                  *Fixed frequency must stay within the specified range (min -
+                  max frequency).
                 </p>
               </div>
             </div>
