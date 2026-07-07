@@ -46,7 +46,7 @@ export default function Main() {
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("Status Data:", data); 
-      setCpuStatus(data) // <--- Menyimpan data ke state cpuStatus
+      setCpuStatus(data)
     };
     wsStatus.onclose = () => console.log("Disconnected from Status WS");
     return () => wsStatus.close();

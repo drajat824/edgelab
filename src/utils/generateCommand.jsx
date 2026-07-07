@@ -140,20 +140,20 @@ function generateUserspace({ status, tunable, governor }) {
   return output;
 }
 
-function generateAffinity({ status, coreDraft, threadDraft }) {
+function generateAffinity({ status, cores, numThread }) {
   const output = [];
 
   if (status?.core) {
     output.push({
       label: "Core Pinning",
-      command: `taskset -c ${Array.isArray(coreDraft) ? coreDraft.join(",") : coreDraft} python3 script.py`,
+      command: `taskset -c ${Array.isArray(cores) ? cores.join(",") : cores} python3 script.py`,
     });
   }
 
   if (status?.thread) {
     output.push({
       label: "Threading",
-      command: `num_thread = ${threadDraft}`,
+      command: `num_thread = ${numThread}`,
     });
   }
 
@@ -173,8 +173,8 @@ export function generateCommandFunction({
   status,
   draft,
   governor,
-  coreDraft,
-  threadDraft,
+  cores,
+  numThread,
   freqDraft,
 }) {
   const output = [];
@@ -191,7 +191,7 @@ export function generateCommandFunction({
 
   // 3. Jika core atau thread yang berubah
   if (status?.core === true || status?.thread === true) {
-    output.push(...generateAffinity({ status, coreDraft, threadDraft }));
+    output.push(...generateAffinity({ status, cores, numThread }));
   }
 
   // 4. Jika ada perubahan parameter internal (tunables) milik governor

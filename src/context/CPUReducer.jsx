@@ -1,8 +1,8 @@
 export const initialState = {
   governor: "performance",
 
-  thread: null,
-  core: [],
+  numThread: null,
+  cores: [],
 
   maxFreq: null,
   minFreq: null,

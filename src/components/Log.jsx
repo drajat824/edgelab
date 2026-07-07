@@ -47,7 +47,7 @@ const Log = ({
                         >
                             <span
                                 style={{ fontWeight: "normal" }}
-                                className="text-subinfo min-w-[130px] shrink-0 flex-1"
+                                className="text-subinfo min-w-[130px] shrink-0 flex-auto w-fit bg-red-100"
                             >
                                 • {item.label}
                             </span>

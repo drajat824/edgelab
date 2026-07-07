@@ -33,7 +33,7 @@ export const cpuService = {
 
   // POST - GANTI PARAMETER GOVERNOR
   updateGovernorParams: async (paramsData) => {
-    console.log(paramsData, "PARAMSDATA")
+    console.log(paramsData, "PARAMSDATA");
     try {
       return await api.post("/api/cpu/governor/params", paramsData);
     } catch (error) {
@@ -45,6 +45,28 @@ export const cpuService = {
   getDebugLog: async () => {
     try {
       return await api.get("/log");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // POST - GANTI THREAD
+  updateThread: async ({ numThread }) => {
+    try {
+      return await api.post("/api/thread", {
+        num_threads: numThread,
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // POST - GANTI CORE
+  updateCores: async ({ cores }) => {
+    try {
+      return await api.post("/api/cores", {
+        cores: cores,
+      });
     } catch (error) {
       throw error;
     }

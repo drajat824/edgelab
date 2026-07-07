@@ -23,8 +23,8 @@ export default function Cpu() {
   const [governor, setGovernor] = useState(cpu?.governor);
   const [freq, setFreq] = useState({ max: cpu?.maxFreq, min: cpu?.minFreq });
   const [tunable, setTunable] = useState({});
-  const [threadDraft, setThreadDraft] = useState(cpu?.thread);
-  const [coreDraft, setCoreDraft] = useState(cpu?.core);
+  const [numThread, setNumThread] = useState(cpu?.numThread);
+  const [cores, setCores] = useState(cpu?.cores);
 
   // Data asli & Status Perubahan
   const [originalTunable, setOriginalTunable] = useState({});
@@ -40,7 +40,17 @@ export default function Cpu() {
     cpuService
       .getGovernorStatus()
       .then((data) => {
-        console.log(data?.tunables);
+        console.log(data);
+
+        dispatch({
+          type: "CHANGE_THREAD_CONFIG",
+          payload: data?.numThread,
+        });
+
+        dispatch({
+          type: "CHANGE_CORE_CONFIG",
+          payload: data?.cores,
+        });
 
         dispatch({
           type: "CHANGE_GOVERNOR",
@@ -125,12 +135,12 @@ export default function Cpu() {
 
   useEffect(() => {
     if (cpu?.thread === undefined) return;
-    setThreadDraft(cpu.thread);
+    setNumThread(cpu.thread);
   }, [cpu?.thread]);
 
   useEffect(() => {
     if (cpu?.core === undefined) return;
-    setCoreDraft(cpu.core);
+    setCores(cpu.core);
   }, [cpu?.core]);
 
   useEffect(() => {
@@ -168,12 +178,12 @@ export default function Cpu() {
       ...tunable,
       governor,
       freq,
-      thread: threadDraft,
-      core: coreDraft,
+      thread: numThread,
+      core: cores,
     };
 
     return getChangedFields(cpu, currentDraft);
-  }, [cpu, tunable, freq, governor, threadDraft, coreDraft, originalTunable]);
+  }, [cpu, tunable, freq, governor, numThread, cores, originalTunable]);
 
   // --- 3. STATUS TOMBOL SAVE BUTTON ---
   const disabledButton = useMemo(() => {
@@ -215,6 +225,9 @@ export default function Cpu() {
     targetDraft = {},
     logTarget = "tunable",
   }) => {
+
+    console.log(targetDraft?.numThread)
+
     // 💡 PERBAIKAN: Tentukan secara tegas apakah ini aksi kustom (freq, thread, core) atau aksi tunable
     const isCustom = Object.keys(customStatus).length > 0;
 
@@ -226,8 +239,8 @@ export default function Cpu() {
     const command = generateCommandFunction({
       status: finalStatus,
       governor: governor, // 🚀 KIRIM GOVERNOR AKTIF SECARA EKSPLISIT KESINI
-      threadDraft: targetDraft.threadDraft || threadDraft,
-      coreDraft: targetDraft.coreDraft || coreDraft,
+      numThread: targetDraft.numThread || numThread,
+      cores: targetDraft.cores || cores,
       draft: targetDraft.tunable || tunable,
       freqDraft: targetDraft.freqDraft || freq,
     });
@@ -355,27 +368,62 @@ export default function Cpu() {
     }
   };
 
-  // BELUM DITERAPKAN AXIOS
-  const onSaveThread = () => {
-    handleSaveAction({
-      type: "CHANGE_THREAD_CONFIG",
-      payload: threadDraft,
-      // 💡 Hanya kirim status thread, frekuensi dipastikan terbuang secara absolut
-      customStatus: { thread: true },
-      targetDraft: { threadDraft },
-      logTarget: "threadCore",
-    });
+  // MODEL ACTIONS
+  const onSaveThread = async () => {
+    try {
+      const response = await cpuService.updateThread({
+        numThread: numThread,
+      });
+      const data = response?.data || response;
+
+      if (data && data.status === "success") {
+        handleSaveAction({
+          type: "CHANGE_THREAD_CONFIG",
+          payload: data.num_threads,
+          customStatus: { thread: true },
+          targetDraft: { numThread },
+          logTarget: "threadCore",
+        });
+        console.log(
+          `✓ Alokasi thread berhasil diperbarui menjadi ${data.num_threads}.`,
+        );
+      } else {
+        console.error(
+          "Gagal memperbarui alokasi thread melalui API:",
+          data?.detail,
+        );
+      }
+    } catch (error) {
+      console.error("Error saat mengeksekusi updateThread:", error);
+    }
   };
 
-  const onSaveCore = () => {
-    handleSaveAction({
-      type: "CHANGE_CORE_CONFIG",
-      payload: coreDraft,
-      // 💡 Hanya kirim status core, frekuensi dipastikan terbuang secara absolut
-      customStatus: { core: true },
-      targetDraft: { coreDraft },
-      logTarget: "threadCore",
-    });
+  const onSaveCore = async () => {
+    try {
+      const response = await cpuService.updateCores({ cores: cores });
+      const data = response?.data || response;
+
+      if (data && data.status === "success") {
+        handleSaveAction({
+          type: "CHANGE_CORE_CONFIG",
+          payload: data.cores,
+          customStatus: { core: true },
+          targetDraft: { cores: cores },
+          logTarget: "threadCore",
+        });
+
+        console.log(
+          `✓ Core pinning berhasil diterapkan pada core: [${data.cores.join(", ")}].`,
+        );
+      } else {
+        console.error(
+          "Gagal memperbarui core pinning melalui API:",
+          data?.detail,
+        );
+      }
+    } catch (error) {
+      console.error("Error saat mengeksekusi updateCores:", error);
+    }
   };
 
   // Adjust CPU Min !> Max
@@ -1250,23 +1298,23 @@ export default function Cpu() {
                 <InputWithUnit
                   actived={status?.thread}
                   type="number"
-                  value={threadDraft}
+                  value={numThread}
                   onChange={(e) => {
-                    setThreadDraft(e.target.value);
+                    setNumThread(e.target.value);
                   }}
                   onBlur={() => {
-                    let value = threadDraft;
+                    let value = numThread;
                     value = Number(value);
                     if (value < 1) value = 1;
                     if (value > 4) value = 4;
-                    setThreadDraft(value);
+                    setNumThread(value);
                   }}
                   placeholder="Input thread"
                 />
               </div>
               <p className="text-warning">*Available Maximum Thread: 4</p>
               <ButtonSave
-                disabled={cpu?.thread === threadDraft || threadDraft == ""}
+                disabled={cpu?.thread === numThread || numThread == ""}
                 onClick={onSaveThread}
               />
             </div>
@@ -1281,10 +1329,10 @@ export default function Cpu() {
                 <RadioButton
                   multiple
                   name="cores"
-                  value={coreDraft}
+                  value={cores}
                   onChange={(e) => {
                     const sortedCores = [...e].sort((a, b) => a - b);
-                    setCoreDraft(sortedCores);
+                    setCores(sortedCores);
                   }}
                   options={[
                     { label: "Core 0", value: 0 },
@@ -1295,7 +1343,7 @@ export default function Cpu() {
                 />
               </div>
               <ButtonSave
-                disabled={cpu?.core === coreDraft || coreDraft?.length == 0}
+                disabled={cpu?.core === cores || cores?.length == 0}
                 onClick={onSaveCore}
               />
             </div>
