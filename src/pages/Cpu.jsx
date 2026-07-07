@@ -496,7 +496,7 @@ export default function Cpu() {
                 actived={status?.freq?.min}
                 inCard={true}
                 capslock={false}
-                unit = 'GHz'
+                unit="GHz"
               />
               <div>
                 <p className="text-warning">
@@ -525,7 +525,7 @@ export default function Cpu() {
                 actived={status?.freq?.max}
                 inCard={true}
                 capslock={false}
-                unit = 'GHz'
+                unit="GHz"
               />
               <div>
                 <p className="text-warning">
@@ -1159,7 +1159,7 @@ export default function Cpu() {
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
                   capslock={false}
-                  unit = 'GHz'
+                  unit="GHz"
                 />
                 <p className="text-warning">
                   *Fixed frequency must stay within the specified range (min -
@@ -1225,7 +1225,9 @@ export default function Cpu() {
       )}
 
       {/* Log  */}
-      {governor != "performance" && governor != "powersave" && <Log value={logTunable} />}
+      {governor != "performance" && governor != "powersave" && (
+        <Log value={logTunable} />
+      )}
 
       {/* Thread & Core  */}
       <div className="pt-8">
