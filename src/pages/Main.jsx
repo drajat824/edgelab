@@ -1,25 +1,56 @@
-import { useState, useEffect } from 'react';
-import Play from '../assets/play.svg';
-import Stop from '../assets/stop.svg';
-import ProgressBar from '../components/ProgressBar';
-import Dropdown from '../components/Dropdown';
+import { useState, useEffect } from "react";
+import Play from "../assets/play.svg";
+import Stop from "../assets/stop.svg";
+import ProgressBar from "../components/ProgressBar";
+import Dropdown from "../components/Dropdown";
 
 // State Management
-import useCPU from "../hooks/useCPU"
-import useGround from "../hooks/useGround"
+import useCPU from "../hooks/useCPU";
+import useGround from "../hooks/useGround";
 
 export default function Main() {
-
   const { cpu } = useCPU();
   const { boards } = useGround();
   const [boardsName, setBoardsName] = useState([]);
 
-  const [cpuUtilization, setCpuUtilization] = useState(75)
-  const [model, setModel] = useState("SSD MobileNet V3 Small")
-  const [fps, setFps] = useState("FPS 30")
-  const [board, setBoard] = useState("Board 1")
+  const [cpuUtilization, setCpuUtilization] = useState({
+    average: 0,
+    cores: [0, 0, 0, 0],
+  });
+  const [cpuStatus, setCpuStatus] = useState({
+    frequency: "0.0 GHz",
+    temperature: 0.0,
+  });
 
-  const [streamMode, setStreamMode] = useState(0) // 0: Stop, 1: Start
+  const [model, setModel] = useState("SSD MobileNet V3 Small");
+  const [fps, setFps] = useState("FPS 30");
+  const [board, setBoard] = useState("Board 1");
+
+  const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
+
+  // TES WEBSOCKET
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8000/ws/utilization");
+    ws.onopen = () => console.log("Connected to Utilization WS");
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setCpuUtilization(data);
+    };
+    ws.onclose = () => console.log("Disconnected from Utilization WS");
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    const wsStatus = new WebSocket("ws://localhost:8000/ws/status");
+    wsStatus.onopen = () => console.log("Connected to Status WS");
+    wsStatus.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("Status Data:", data); 
+      setCpuStatus(data) // <--- Menyimpan data ke state cpuStatus
+    };
+    wsStatus.onclose = () => console.log("Disconnected from Status WS");
+    return () => wsStatus.close();
+  }, []);
 
   useEffect(() => {
     if (!boards) return;
@@ -31,21 +62,9 @@ export default function Main() {
     console.log("Stream Mode changed:", streamMode);
   }, [streamMode]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate CPU utilization changes
-      const newCpuUtilization = Math.floor(Math.random() * 100);
-      setCpuUtilization(newCpuUtilization);
-    }, 2000); // Update every 2 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, []);
-
   return (
     <div className="parent">
-      <h1 className="text-xtitle">
-        Main Monitor
-      </h1>
+      <h1 className="text-xtitle">Main Monitor</h1>
       <p className="text-subinfo mt-2 text-gray-500">
         Monitor camera streams along with model and CPU metrics.
       </p>
@@ -55,17 +74,13 @@ export default function Main() {
       <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
         {/* STREAMING  */}
         <div className="flex flex-col flex-1">
-
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown
               width="w-65"
               value={model}
               onChange={setModel}
-              options={[
-                "SSD MobileNet V3 Small",
-                "SSD MobileNet V3 Large",
-              ]}
+              options={["SSD MobileNet V3 Small", "SSD MobileNet V3 Large"]}
               disabled={streamMode === 1}
             />
             <Dropdown
@@ -90,21 +105,29 @@ export default function Main() {
           {/* Button */}
           <div className="flex justify-between mt-9 gap-10 items-end">
             <button
-              style={{ cursor: streamMode === 1 ? 'not-allowed' : 'pointer' }}
+              style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
               disabled={streamMode === 1}
               className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]"
               onClick={() => setStreamMode(1)}
             >
-              <img src={Play} alt="Play" className="w-7 h-7 mr-1 inline-block" />
+              <img
+                src={Play}
+                alt="Play"
+                className="w-7 h-7 mr-1 inline-block"
+              />
               <p>Start</p>
             </button>
             <button
-              style={{ cursor: streamMode === 0 ? 'not-allowed' : 'pointer' }}
+              style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }}
               disabled={streamMode === 0}
               className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
               onClick={() => setStreamMode(0)}
             >
-              <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
+              <img
+                src={Stop}
+                alt="Stop"
+                className="w-7 h-7 mr-2 inline-block"
+              />
               <p>Stop</p>
             </button>
           </div>
@@ -164,7 +187,6 @@ export default function Main() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* INFO  */}
@@ -173,36 +195,46 @@ export default function Main() {
           {/* CPU Utilization */}
           <div className="card w-full h-full rounded-lg shadow-md gap-4">
             <p className="text-title">CPU Utilization</p>
-            <p className="text-info mb-4 mt-2">Average: {cpuUtilization}%</p>
+            <p className="text-info mb-4 mt-2">
+              Average: {cpuUtilization?.average}%
+            </p>
             <div className="flex gap-8 mb-4">
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization} />
+                <ProgressBar value={cpuUtilization?.cores[0]} />
                 <div className="flex justify-between text-sm mt-1">
                   <span className="text-subinfo">Core 0</span>
-                  <span className="text-subinfo">{cpuUtilization}%</span>
+                  <span className="text-subinfo">
+                    {cpuUtilization?.cores[0]}%
+                  </span>
                 </div>
               </div>
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization} />
+                <ProgressBar value={cpuUtilization?.cores[1]} />
                 <div className="flex justify-between text-sm mt-1">
                   <span className="text-subinfo">Core 1</span>
-                  <span className="text-subinfo">{cpuUtilization}%</span>
+                  <span className="text-subinfo">
+                    {cpuUtilization?.cores[1]}%
+                  </span>
                 </div>
               </div>
             </div>
             <div className="flex gap-8">
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization} />
+                <ProgressBar value={cpuUtilization?.cores[2]} />
                 <div className="flex justify-between text-sm mt-1">
                   <span className="text-subinfo">Core 2</span>
-                  <span className="text-subinfo">{cpuUtilization}%</span>
+                  <span className="text-subinfo">
+                    {cpuUtilization?.cores[2]}%
+                  </span>
                 </div>
               </div>
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization} />
+                <ProgressBar value={cpuUtilization?.cores[3]} />
                 <div className="flex justify-between text-sm mt-1">
                   <span className="text-subinfo">Core 3</span>
-                  <span className="text-subinfo">{cpuUtilization}%</span>
+                  <span className="text-subinfo">
+                    {cpuUtilization?.cores[3]}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -216,12 +248,12 @@ export default function Main() {
               <p className="text-title">CPU Status</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">Frequency:</p>
+                  <p className="text-info">Current Frequency:</p>
                   <p className="text-info">Temperature:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">1,2 GHz</p>
-                  <p className="text-info">45°C</p>
+                  <p className="text-info">{cpuStatus?.frequency}</p>
+                  <p className="text-info">{cpuStatus?.temperature} °C</p>
                 </div>
               </div>
             </div>
@@ -233,16 +265,24 @@ export default function Main() {
                   <p className="text-subinfo">Core Pinning:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-subinfo uppercase" style={{ fontWeight: 'bold' }}>{cpu?.governor}</p>
-                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>{cpu?.thread}</p>
-                  <p className="text-subinfo" style={{ fontWeight: 'bold' }}>{cpu?.core?.join(', ')}</p>
+                  <p
+                    className="text-subinfo uppercase"
+                    style={{ fontWeight: "bold" }}
+                  >
+                    {cpu?.governor}
+                  </p>
+                  <p className="text-subinfo" style={{ fontWeight: "bold" }}>
+                    {cpu?.thread}
+                  </p>
+                  <p className="text-subinfo" style={{ fontWeight: "bold" }}>
+                    {cpu?.core?.join(", ")}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
-  )
+  );
 }
