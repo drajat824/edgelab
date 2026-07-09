@@ -1,5 +1,5 @@
 export const initialState = {
-  governor: "performance",
+  governor: "",
 
   numThread: null,
   cores: [],

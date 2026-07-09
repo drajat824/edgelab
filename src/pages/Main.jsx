@@ -8,8 +8,10 @@ import Dropdown from "../components/Dropdown";
 import useCPU from "../hooks/useCPU";
 import useGround from "../hooks/useGround";
 
+import {cpuService} from "../services/cpuServices"
+
 export default function Main() {
-  const { cpu } = useCPU();
+  const { cpu, dispatch } = useCPU();
   const { boards } = useGround();
   const [boardsName, setBoardsName] = useState([]);
 
@@ -28,9 +30,9 @@ export default function Main() {
 
   const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
 
-  // TES WEBSOCKET
+  // WEBSOCKET -  CPU UTILICATION BAR
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws/utilization");
+    const ws = new WebSocket(`${import.meta.env.VITE_API}/ws/utilization`);
     ws.onopen = () => console.log("Connected to Utilization WS");
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -41,12 +43,12 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    const wsStatus = new WebSocket("ws://localhost:8000/ws/status");
+    const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/status`);
     wsStatus.onopen = () => console.log("Connected to Status WS");
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Status Data:", data); 
-      setCpuStatus(data)
+      console.log("Status Data:", data);
+      setCpuStatus(data);
     };
     wsStatus.onclose = () => console.log("Disconnected from Status WS");
     return () => wsStatus.close();
@@ -61,6 +63,46 @@ export default function Main() {
   useEffect(() => {
     console.log("Stream Mode changed:", streamMode);
   }, [streamMode]);
+
+  // GET AXIOS DATA
+
+  useEffect(() => {
+    cpuService
+      .getGovernorStatus()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_GOVERNOR",
+          payload: data.governor,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi dengan hardware Linux:", err);
+      });
+
+    cpuService
+      .getThread()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_THREAD_CONFIG",
+          payload: data?.num_threads,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
+      });
+
+    cpuService
+      .getCores()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_CORE_CONFIG",
+          payload: data?.cores,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi CORE hardware Linux:", err);
+      });
+  }, [dispatch]);
 
   return (
     <div className="parent">

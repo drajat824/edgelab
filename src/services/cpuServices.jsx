@@ -1,6 +1,7 @@
-import api from "./api";
+import {api, apiAi} from "./api";
 
 export const cpuService = {
+  
   // GET GOVERNOR
   getGovernorStatus: async () => {
     try {
@@ -50,10 +51,28 @@ export const cpuService = {
     }
   },
 
-  // POST - GANTI THREAD
+  // === UNTUK EDGELAB - AI ===
+
+  getThread: async () => {
+    try {
+      return await apiAi.get("/api/thread");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getCores: async () => {
+    try {
+      return await apiAi.get("/api/cores");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // POST - THREAD
   updateThread: async ({ numThread }) => {
     try {
-      return await api.post("/api/thread", {
+      return await apiAi.post("/api/thread", {
         num_threads: numThread,
       });
     } catch (error) {
@@ -61,10 +80,10 @@ export const cpuService = {
     }
   },
 
-  // POST - GANTI CORE
+  // POST - CORE
   updateCores: async ({ cores }) => {
     try {
-      return await api.post("/api/cores", {
+      return await apiAi.post("/api/cores", {
         cores: cores,
       });
     } catch (error) {

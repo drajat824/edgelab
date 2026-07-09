@@ -43,16 +43,6 @@ export default function Cpu() {
         console.log(data);
 
         dispatch({
-          type: "CHANGE_THREAD_CONFIG",
-          payload: data?.numThread,
-        });
-
-        dispatch({
-          type: "CHANGE_CORE_CONFIG",
-          payload: data?.cores,
-        });
-
-        dispatch({
           type: "CHANGE_GOVERNOR",
           payload: data.governor,
         });
@@ -79,6 +69,30 @@ export default function Cpu() {
       })
       .catch((err) => {
         console.error("Gagal sinkronisasi dengan hardware Linux:", err);
+      });
+
+    cpuService
+      .getThread()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_THREAD_CONFIG",
+          payload: data?.num_threads,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
+      });
+
+    cpuService
+      .getCores()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_CORE_CONFIG",
+          payload: data?.cores,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi CORE hardware Linux:", err);
       });
   }, [dispatch]);
 
@@ -132,6 +146,8 @@ export default function Cpu() {
     if (!cpu) return;
     setFreq({ max: cpu.maxFreq, min: cpu.minFreq });
   }, [cpu?.maxFreq, cpu?.minFreq]);
+
+  // --- THREAD & CORES ---
 
   useEffect(() => {
     if (cpu?.thread === undefined) return;
@@ -225,9 +241,6 @@ export default function Cpu() {
     targetDraft = {},
     logTarget = "tunable",
   }) => {
-
-    console.log(targetDraft?.numThread)
-
     // 💡 PERBAIKAN: Tentukan secara tegas apakah ini aksi kustom (freq, thread, core) atau aksi tunable
     const isCustom = Object.keys(customStatus).length > 0;
 
@@ -283,7 +296,7 @@ export default function Cpu() {
     }
   };
 
-  const onSaveGovernor = async () => {
+  const onSaveTunnable = async () => {
     try {
       const response = await cpuService.updateGovernorParams(
         tunable[cpu?.governor],
@@ -329,18 +342,17 @@ export default function Cpu() {
     }
   };
 
-  const onChangeGovernor = async () => {
+  const onSaveGovernor = async () => {
     if (governor !== cpu?.governor) {
-      const command = generateCommandFunction({
-        status: { governor: true },
-        governor: governor,
-        draft: { governor: governor },
-      });
-      setLogGeneral(command);
-
       try {
         const data = await cpuService.updateGovernor({ governor: governor });
         if (data && data.status === "success") {
+          const command = generateCommandFunction({
+            status: { governor: true },
+            governor: governor,
+            draft: { governor: governor },
+          });
+          setLogGeneral(command);
           dispatch({
             type: "CHANGE_GOVERNOR_CONFIG",
             payload: {
@@ -368,7 +380,6 @@ export default function Cpu() {
     }
   };
 
-  // MODEL ACTIONS
   const onSaveThread = async () => {
     try {
       const response = await cpuService.updateThread({
@@ -457,7 +468,7 @@ export default function Cpu() {
   useEffect(() => {
     if (!tunable?.userspace?.fixedFrequency) return;
     if (isAutoAdjusting.current) {
-      onSaveGovernor(); // Eksekusi save otomatis
+      onSaveTunnable(); // Eksekusi save otomatis
       isAutoAdjusting.current = false; // Reset kembali flag-nya
     }
   }, [tunable?.userspace?.fixedFrequency]);
@@ -498,7 +509,7 @@ export default function Cpu() {
         <div className="flex-1 flex flex-col lg:flex-row lg:justify-between lg:items-center">
           {/* Button Change */}
           <button
-            onClick={onChangeGovernor}
+            onClick={onSaveGovernor}
             disabled={governor === cpu?.governor} // 💡 REVISI: Menggunakan cpu?.governor
             style={{
               color: "white",
@@ -849,7 +860,7 @@ export default function Cpu() {
               disabled={
                 cpu?.governor != "ondemand" || !disabledButton?.ondemand
               }
-              onClick={onSaveGovernor}
+              onClick={onSaveTunnable}
             />
           </div>
         </div>
@@ -1125,7 +1136,7 @@ export default function Cpu() {
               disabled={
                 cpu?.governor != "conservative" || !disabledButton?.conservative
               }
-              onClick={onSaveGovernor}
+              onClick={onSaveTunnable}
             />
           </div>
         </div>
@@ -1170,7 +1181,7 @@ export default function Cpu() {
               disabled={
                 cpu?.governor != "schedutil" || !disabledButton?.schedutil
               }
-              onClick={onSaveGovernor}
+              onClick={onSaveTunnable}
             />
           </div>
         </div>
@@ -1266,7 +1277,7 @@ export default function Cpu() {
               disabled={
                 cpu?.governor != "userspace" || !disabledButton?.userspace
               }
-              onClick={onSaveGovernor}
+              onClick={onSaveTunnable}
             />
           </div>
         </div>
