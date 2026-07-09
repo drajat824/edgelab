@@ -4,6 +4,7 @@ import DropdownActive from "../assets/dropdown-active.svg";
 
 export default function Dropdown({
   label = "Select",
+  valueLabel = '',
   options = [],
   value,
   onChange,
@@ -41,6 +42,7 @@ export default function Dropdown({
         <span
           className={`${capslock && "uppercase"} truncate ${actived ? "text-blue-500" : "text-gray-700"}`}
         >
+          {valueLabel && <span>{valueLabel} </span>}
           {value + ` ${unit}` || "Select..."}
         </span>
         <img
@@ -71,7 +73,7 @@ export default function Dropdown({
                     : "text-current"
                 }`}
               >
-                <p className="truncate">{opt + ` ${unit}`}</p>
+                <p className="truncate">{valueLabel && <span>{valueLabel}</span>} {opt + ` ${unit}`}</p>
               </button>
             );
           })}

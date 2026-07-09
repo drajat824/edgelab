@@ -7,6 +7,8 @@ export const initialState = {
   maxFreq: null,
   minFreq: null,
 
+  fpsCamera: null,
+
   ondemand: {
     thresholdUp: null,
     samplingRate: null,
@@ -68,6 +70,12 @@ export function cpuReducer(state, action) {
       return {
         ...state,
         core: action.payload,
+      };
+
+    case "CHANGE_FPS_CONFIG":
+      return {
+        ...state,
+        fpsCamera: action.payload,
       };
 
     case "RESET":

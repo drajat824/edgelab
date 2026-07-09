@@ -8,13 +8,13 @@ import Dropdown from "../components/Dropdown";
 import useCPU from "../hooks/useCPU";
 import useGround from "../hooks/useGround";
 
-import {cpuService} from "../services/cpuServices"
+import { cpuService } from "../services/cpuServices";
 
 export default function Main() {
   const { cpu, dispatch } = useCPU();
   const { boards } = useGround();
+  
   const [boardsName, setBoardsName] = useState([]);
-
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
     cores: [0, 0, 0, 0],
@@ -23,14 +23,13 @@ export default function Main() {
     frequency: "0.0 GHz",
     temperature: 0.0,
   });
-
   const [model, setModel] = useState("SSD MobileNet V3 Small");
-  const [fps, setFps] = useState("FPS 30");
+  const [fps, setFps] = useState(cpu?.fpsCamera);
   const [board, setBoard] = useState("Board 1");
-
   const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
 
   // WEBSOCKET -  CPU UTILICATION BAR
+
   useEffect(() => {
     const ws = new WebSocket(`${import.meta.env.VITE_API}/ws/utilization`);
     ws.onopen = () => console.log("Connected to Utilization WS");
@@ -64,7 +63,7 @@ export default function Main() {
     console.log("Stream Mode changed:", streamMode);
   }, [streamMode]);
 
-  // GET AXIOS DATA
+  // GET DATA AWAL
 
   useEffect(() => {
     cpuService
@@ -102,7 +101,37 @@ export default function Main() {
       .catch((err) => {
         console.error("Gagal sinkronisasi CORE hardware Linux:", err);
       });
+
+    cpuService
+      .getFps()
+      .then((data) => {
+        dispatch({
+          type: "CHANGE_FPS_CONFIG",
+          payload: data?.fps_camera,
+        });
+      })
+      .catch((err) => {
+        console.error("Gagal sinkronisasi FPS hardware Linux:", err);
+      });
   }, [dispatch]);
+
+  // GET FPS CAMERA
+
+  useEffect(() => {
+    setFps(cpu?.fpsCamera);
+  }, [cpu?.fpsCamera]);
+
+  const onChangeFPS = async (e) => {
+    if (e === fps) return;
+    const response = await cpuService.updateFps({
+      fps: e,
+    });
+    if (response?.status != "success") return;
+    dispatch({
+      type: "CHANGE_FPS_CONFIG",
+      payload: e,
+    });
+  };
 
   return (
     <div className="parent">
@@ -128,15 +157,9 @@ export default function Main() {
             <Dropdown
               width="w-30"
               value={fps}
-              onChange={setFps}
-              options={[
-                "FPS 30",
-                "FPS 25",
-                "FPS 20",
-                "FPS 15",
-                "FPS 10",
-                "FPS 5",
-              ]}
+              onChange={(e) => onChangeFPS(e)}
+              valueLabel="FPS"
+              options={[30, 25, 20, 15, 10, 5]}
             />
           </div>
 
@@ -251,22 +274,22 @@ export default function Main() {
                 </div>
               </div>
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[1]} />
+                <ProgressBar value={cpuUtilization?.cores[2]} />
                 <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 1</span>
+                  <span className="text-subinfo">Core 2</span>
                   <span className="text-subinfo">
-                    {cpuUtilization?.cores[1]}%
+                    {cpuUtilization?.cores[2]}%
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex gap-8">
               <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[2]} />
+                <ProgressBar value={cpuUtilization?.cores[1]} />
                 <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 2</span>
+                  <span className="text-subinfo">Core 1</span>
                   <span className="text-subinfo">
-                    {cpuUtilization?.cores[2]}%
+                    {cpuUtilization?.cores[1]}%
                   </span>
                 </div>
               </div>
