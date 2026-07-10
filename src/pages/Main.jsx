@@ -252,7 +252,7 @@ export default function Main() {
             </div>
 
             {/* Button */}
-            <div className="flex justify-between gap-10 items-end">
+            <div className="flex justify-between gap-4 items-end">
               <button
                 style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
                 disabled={streamMode === 1}
