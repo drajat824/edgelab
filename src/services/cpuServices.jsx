@@ -127,4 +127,12 @@ export const cpuService = {
       throw error;
     }
   },
+
+  infoStream: async () => {
+    try {
+      return await apiAi.get("/video-info");
+    } catch (error) {
+      throw error;
+    }
+  },
 };

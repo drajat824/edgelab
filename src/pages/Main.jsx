@@ -31,7 +31,6 @@ export default function Main() {
 
   const [model, setModel] = useState("SSD MobileNet V3 Small");
   const [fps, setFps] = useState(cpu?.fpsCamera);
-
   const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
 
   // BOARD
@@ -39,9 +38,8 @@ export default function Main() {
   const [itemBoard, setItemBoard] = useState({});
   const [selectedBoard, setSelectedBoard] = useState(boards[0]?.board_name);
 
-  console.log(itemBoard);
-
   // MATCH ITEM BOARD TER-SELECT DENGAN GAMBAR
+
   useEffect(() => {
     if (!boards || !selectedBoard) return;
     const targetBoard = boards.find((e) => e.board_name === selectedBoard);
@@ -85,6 +83,7 @@ export default function Main() {
   }, []);
 
   // START - STOP STREAM
+
   useEffect(() => {
     const handleVideoToggle = async () => {
       if (streamMode) {
@@ -108,6 +107,26 @@ export default function Main() {
       cpuService.stopVideo();
     };
   }, [streamMode]);
+
+  // KONDISI AWAL STREAM
+
+  useEffect(() => {
+    const handleInfoStream = async () => {
+      try {
+        const data = await cpuService.stopVideo();
+        if (data?.stream_status == "start") {
+          setStreamMode(1);
+        }
+        if (data?.stream_status == "stop") {
+          setStreamMode(0);
+        }
+      } catch (error) {
+        console.error("Gagal menjalankan video:", error);
+      }
+    };
+
+    handleInfoStream();
+  }, []);
 
   // GET DATA AWAL
 
@@ -213,7 +232,7 @@ export default function Main() {
 
           {/* CHILD  */}
 
-          <div className="flex flex-col gap-6" >
+          <div className="flex flex-col gap-6">
             {/* Streaming Camera */}
             <div className="card-stream w-full h-fit flex items-center justify-center">
               {streamMode ? (
@@ -315,7 +334,6 @@ export default function Main() {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* ACCURACY METRICS  */}
@@ -323,7 +341,7 @@ export default function Main() {
           <div className="flex justify-end">
             <Dropdown
               width="w-40"
-              value={selectedBoard || '-'}
+              value={selectedBoard || "-"}
               options={boards?.map((e) => e.board_name)}
               onChange={(e) => setSelectedBoard(e)}
             />
