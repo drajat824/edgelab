@@ -13,7 +13,8 @@ import { cpuService } from "../services/cpuServices";
 export default function Main() {
   const { cpu, dispatch } = useCPU();
   const { boards } = useGround();
-  
+  const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
+
   const [boardsName, setBoardsName] = useState([]);
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
@@ -46,7 +47,6 @@ export default function Main() {
     wsStatus.onopen = () => console.log("Connected to Status WS");
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Status Data:", data);
       setCpuStatus(data);
     };
     wsStatus.onclose = () => console.log("Disconnected from Status WS");
@@ -60,7 +60,27 @@ export default function Main() {
   }, [boards]);
 
   useEffect(() => {
-    console.log("Stream Mode changed:", streamMode);
+    const handleVideoToggle = async () => {
+      if (streamMode) {
+        try {
+          await cpuService.startVideo();
+        } catch (error) {
+          console.error("Gagal menjalankan video:", error);
+        }
+      } else {
+        try {
+          await cpuService.stopVideo();
+        } catch (error) {
+          console.error("Gagal menjalankan video:", error);
+        }
+      }
+    };
+
+    handleVideoToggle();
+
+    return () => {
+      cpuService.stopVideo();
+    };
   }, [streamMode]);
 
   // GET DATA AWAL
@@ -164,8 +184,18 @@ export default function Main() {
           </div>
 
           {/* Streaming Camera */}
-          <div className="card-stream w-full h-[350px] flex items-center justify-center">
-            <p>Camera Stream!</p>
+          <div className="card-stream w-full h-full flex items-center justify-center">
+            {streamMode ? (
+              <img
+                src={videoUrl}
+                alt="Live Video Feed"
+                className="w-full h-full object-contain rounded-lg"
+              />
+            ) : (
+              <div className="h-[380px] w-full object-contain bg-black rounded-lg flex items-center justify-center">
+                <p className="text-white text-4xl text-center">DETECTION <br/>STOPPED</p>
+              </div>
+            )}
           </div>
           {/* Button */}
           <div className="flex justify-between mt-9 gap-10 items-end">

@@ -52,8 +52,6 @@ export const cpuService = {
 
   // === UNTUK EDGELAB - AI ===
 
-  
-
   //  THREAD
   getThread: async () => {
     try {
@@ -102,11 +100,29 @@ export const cpuService = {
   },
 
   updateFps: async ({ fps }) => {
-    console.log(fps)
+    console.log(fps);
     try {
       return await apiAi.post("/api/fps", {
         fps_camera: fps,
       });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // VIDEO
+
+  startVideo: async () => {
+    try {
+      return await apiAi.get("/start");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  stopVideo: async () => {
+    try {
+      return await apiAi.get("/stop");
     } catch (error) {
       throw error;
     }
