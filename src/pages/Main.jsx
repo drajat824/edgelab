@@ -8,6 +8,11 @@ import Dropdown from "../components/Dropdown";
 import useCPU from "../hooks/useCPU";
 import useGround from "../hooks/useGround";
 
+import TextInput from "../components/TextInput";
+
+// CARDS IMAGES
+import CARDS from "../components/Cards";
+
 import { cpuService } from "../services/cpuServices";
 
 export default function Main() {
@@ -15,7 +20,6 @@ export default function Main() {
   const { boards } = useGround();
   const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
 
-  const [boardsName, setBoardsName] = useState([]);
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
     cores: [0, 0, 0, 0],
@@ -24,10 +28,37 @@ export default function Main() {
     frequency: "0.0 GHz",
     temperature: 0.0,
   });
+
   const [model, setModel] = useState("SSD MobileNet V3 Small");
   const [fps, setFps] = useState(cpu?.fpsCamera);
-  const [board, setBoard] = useState("Board 1");
+
   const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
+
+  // BOARD
+
+  const [itemBoard, setItemBoard] = useState({});
+  const [selectedBoard, setSelectedBoard] = useState(boards[0]?.board_name);
+
+  console.log(itemBoard);
+
+  // MATCH ITEM BOARD TER-SELECT DENGAN GAMBAR
+  useEffect(() => {
+    if (!boards || !selectedBoard) return;
+    const targetBoard = boards.find((e) => e.board_name === selectedBoard);
+
+    if (targetBoard) {
+      const transformedBoard = {
+        id: targetBoard.board_id,
+        name: targetBoard.board_name,
+        slots: targetBoard.ground_truth.map((cardId, index) => ({
+          id: `slot-${index}`,
+          value: CARDS.find((card) => card.id === cardId) || null,
+        })),
+      };
+
+      setItemBoard(transformedBoard);
+    }
+  }, [selectedBoard]);
 
   // WEBSOCKET -  CPU UTILICATION BAR
 
@@ -53,12 +84,7 @@ export default function Main() {
     return () => wsStatus.close();
   }, []);
 
-  useEffect(() => {
-    if (!boards) return;
-    const names = boards.map((e) => e?.board_name);
-    setBoardsName(names);
-  }, [boards]);
-
+  // START - STOP STREAM
   useEffect(() => {
     const handleVideoToggle = async () => {
       if (streamMode) {
@@ -141,6 +167,8 @@ export default function Main() {
     setFps(cpu?.fpsCamera);
   }, [cpu?.fpsCamera]);
 
+  // CHANGE FPS
+
   const onChangeFPS = async (e) => {
     if (e === fps) return;
     const response = await cpuService.updateFps({
@@ -183,49 +211,111 @@ export default function Main() {
             />
           </div>
 
-          {/* Streaming Camera */}
-          <div className="card-stream w-full h-full flex items-center justify-center">
-            {streamMode ? (
-              <img
-                src={videoUrl}
-                alt="Live Video Feed"
-                className="w-full h-full object-contain rounded-lg"
-              />
-            ) : (
-              <div className="h-[380px] w-full object-contain bg-black rounded-lg flex items-center justify-center">
-                <p className="text-white text-4xl text-center">DETECTION <br/>STOPPED</p>
+          {/* CHILD  */}
+
+          <div className="flex flex-col gap-6" >
+            {/* Streaming Camera */}
+            <div className="card-stream w-full h-fit flex items-center justify-center">
+              {streamMode ? (
+                <img
+                  src={videoUrl}
+                  alt="Live Video Feed"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              ) : (
+                <div className="h-[376.5px] w-full object-contain bg-black rounded-lg flex items-center justify-center">
+                  <p className="text-white text-4xl text-center">
+                    DETECTION <br />
+                    STOPPED
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Button */}
+            <div className="flex justify-between gap-10 items-end">
+              <button
+                style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
+                disabled={streamMode === 1}
+                className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]"
+                onClick={() => setStreamMode(1)}
+              >
+                <img
+                  src={Play}
+                  alt="Play"
+                  className="w-7 h-7 mr-1 inline-block"
+                />
+                <p>Start</p>
+              </button>
+              <button
+                style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }}
+                disabled={streamMode === 0}
+                className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
+                onClick={() => setStreamMode(0)}
+              >
+                <img
+                  src={Stop}
+                  alt="Stop"
+                  className="w-7 h-7 mr-2 inline-block"
+                />
+                <p>Stop</p>
+              </button>
+            </div>
+
+            {/* INFO  */}
+            <div className="flex flex-col lg:flex-row justify-between gap-4 max-w-screen">
+              <div className="flex-1">
+                {/* CPU Utilization */}
+                <div className="card w-full h-full rounded-lg shadow-md gap-4">
+                  <p className="text-title">CPU Utilization</p>
+                  <p className="text-info mb-4 mt-2">
+                    Average: {cpuUtilization?.average}%
+                  </p>
+                  <div className="flex gap-8 mb-4">
+                    <div className="gap-2 w-full">
+                      <ProgressBar value={cpuUtilization?.cores[0]} />
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-subinfo">Core 0</span>
+                        <span className="text-subinfo">
+                          {cpuUtilization?.cores[0]}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="gap-2 w-full">
+                      <ProgressBar value={cpuUtilization?.cores[2]} />
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-subinfo">Core 2</span>
+                        <span className="text-subinfo">
+                          {cpuUtilization?.cores[2]}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-8">
+                    <div className="gap-2 w-full">
+                      <ProgressBar value={cpuUtilization?.cores[1]} />
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-subinfo">Core 1</span>
+                        <span className="text-subinfo">
+                          {cpuUtilization?.cores[1]}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="gap-2 w-full">
+                      <ProgressBar value={cpuUtilization?.cores[3]} />
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-subinfo">Core 3</span>
+                        <span className="text-subinfo">
+                          {cpuUtilization?.cores[3]}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
-          {/* Button */}
-          <div className="flex justify-between mt-9 gap-10 items-end">
-            <button
-              style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
-              disabled={streamMode === 1}
-              className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]"
-              onClick={() => setStreamMode(1)}
-            >
-              <img
-                src={Play}
-                alt="Play"
-                className="w-7 h-7 mr-1 inline-block"
-              />
-              <p>Start</p>
-            </button>
-            <button
-              style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }}
-              disabled={streamMode === 0}
-              className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
-              onClick={() => setStreamMode(0)}
-            >
-              <img
-                src={Stop}
-                alt="Stop"
-                className="w-7 h-7 mr-2 inline-block"
-              />
-              <p>Stop</p>
-            </button>
-          </div>
+
         </div>
 
         {/* ACCURACY METRICS  */}
@@ -233,12 +323,36 @@ export default function Main() {
           <div className="flex justify-end">
             <Dropdown
               width="w-40"
-              value={board}
-              onChange={setBoard}
-              options={boardsName}
+              value={selectedBoard || '-'}
+              options={boards?.map((e) => e.board_name)}
+              onChange={(e) => setSelectedBoard(e)}
             />
           </div>
+
           <div className="flex flex-col gap-2 mt-4">
+            {!!selectedBoard && (
+              <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
+                <div className="grid grid-cols-4 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
+                  {itemBoard?.slots?.map((card, i) => {
+                    return card?.value ? (
+                      <img
+                        key={i}
+                        src={card?.value?.img}
+                        alt="Ground"
+                        className="w-7 h-15 object-contain"
+                      />
+                    ) : (
+                      /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
+                      <div
+                        key={i}
+                        className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300"
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="card">
               <p className="text-title">Accuracy Metrics</p>
               <div className="flex mt-2 gap-5">
@@ -280,98 +394,51 @@ export default function Main() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* INFO  */}
-      <div className="flex flex-col lg:flex-row justify-between gap-4 mt-4 max-w-screen">
-        <div className="flex-1">
-          {/* CPU Utilization */}
-          <div className="card w-full h-full rounded-lg shadow-md gap-4">
-            <p className="text-title">CPU Utilization</p>
-            <p className="text-info mb-4 mt-2">
-              Average: {cpuUtilization?.average}%
-            </p>
-            <div className="flex gap-8 mb-4">
-              <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[0]} />
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 0</span>
-                  <span className="text-subinfo">
-                    {cpuUtilization?.cores[0]}%
-                  </span>
+            {/* CPU STATUS  */}
+            <div className="flex-none flex flex-col min-w-75">
+              <div className="flex flex-auto flex-col gap-2">
+                <div className="card">
+                  <p className="text-title">CPU Status</p>
+                  <div className="flex mt-2 gap-5">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-info">Current Frequency:</p>
+                      <p className="text-info">Temperature:</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-info">{cpuStatus?.frequency}</p>
+                      <p className="text-info">{cpuStatus?.temperature} °C</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[2]} />
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 2</span>
-                  <span className="text-subinfo">
-                    {cpuUtilization?.cores[2]}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-8">
-              <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[1]} />
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 1</span>
-                  <span className="text-subinfo">
-                    {cpuUtilization?.cores[1]}%
-                  </span>
-                </div>
-              </div>
-              <div className="gap-2 w-full">
-                <ProgressBar value={cpuUtilization?.cores[3]} />
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-subinfo">Core 3</span>
-                  <span className="text-subinfo">
-                    {cpuUtilization?.cores[3]}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CPU STATUS  */}
-        <div className="flex-none flex flex-col min-w-75">
-          <div className="flex flex-auto flex-col gap-2">
-            <div className="card">
-              <p className="text-title">CPU Status</p>
-              <div className="flex mt-2 gap-5">
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">Current Frequency:</p>
-                  <p className="text-info">Temperature:</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">{cpuStatus?.frequency}</p>
-                  <p className="text-info">{cpuStatus?.temperature} °C</p>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="flex gap-4">
-                <div className="flex flex-col gap-1">
-                  <p className="text-subinfo">CPU Governor:</p>
-                  <p className="text-subinfo">Thread Allocation:</p>
-                  <p className="text-subinfo">Core Pinning:</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p
-                    className="text-subinfo uppercase"
-                    style={{ fontWeight: "bold" }}
-                  >
-                    {cpu?.governor}
-                  </p>
-                  <p className="text-subinfo" style={{ fontWeight: "bold" }}>
-                    {cpu?.thread}
-                  </p>
-                  <p className="text-subinfo" style={{ fontWeight: "bold" }}>
-                    {cpu?.core?.join(", ")}
-                  </p>
+                <div className="card">
+                  <div className="flex gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-subinfo">CPU Governor:</p>
+                      <p className="text-subinfo">Thread Allocation:</p>
+                      <p className="text-subinfo">Core Pinning:</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p
+                        className="text-subinfo uppercase"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {cpu?.governor}
+                      </p>
+                      <p
+                        className="text-subinfo"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {cpu?.thread}
+                      </p>
+                      <p
+                        className="text-subinfo"
+                        style={{ fontWeight: "bold" }}
+                      >
+                        {cpu?.core?.join(", ")}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

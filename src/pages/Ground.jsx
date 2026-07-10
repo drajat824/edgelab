@@ -6,7 +6,6 @@ import Droppable from "../components/Droppable";
 import Draggable from "../components/Draggable";
 
 import CARDS from "../components/Cards"
-import { CARDS1, CARDS2, CARDS3 } from "../components/CardsTemp"
 
 import Delete from "../assets/delete.svg"
 
@@ -48,6 +47,11 @@ export default function Ground() {
 
   const isBoardEmpty = draftBoard?.slots?.every((slot) => slot.value === null) || !draftBoard?.name?.trim();
   const isSaveDisabled = !draftBoard?.id?.trim()
+  const isNameSame = displayBoards?.some(
+    (board) => 
+      board.name.trim().toLowerCase() === draftBoard?.name?.trim().toLowerCase() && 
+      board.id !== draftBoard?.id
+  );
 
   const onSelectedBoard = (board) => {
     setAddData(false)
@@ -117,7 +121,7 @@ const onDelete = (id) => {
                   <button onClick={() => onSelectedBoard(e)} className={`w-[200px] h-[250px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-white group ${selected ? "shadow-lg shadow-blue-300 -translate-y-1" : "hover:shadow-lg hover:-translate-y-1 transition-all duration-200"}`}>
                     <div className="flex flex-col gap-2 w-[200px]">
                       {/* Grid Card */}
-                      <div className={`grid grid-cols-4 gap-4 p-4 ${selected ? "border border-blue-500" : "border border-slate-200"} rounded-md h-[250px] items-center justify-items-center bg-white shadow-sm`}>
+                      <div className={`grid grid-cols-4 gap-4 p-4 ${selected ? "border border-blue-500" : "border border-black-200"} rounded-md h-[250px] items-center justify-items-center bg-white shadow-sm`}>
                         {e.slots.map((card, i) => {
                           return card?.value ? (
                             <img
@@ -152,7 +156,7 @@ const onDelete = (id) => {
               className={`w-[200px] h-[250px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 group 
               ${isAddData
                   ? "border border-blue-500 shadow-blue-300 shadow-lg -translate-y-1"
-                  : "border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-1"
+                  : "border border-gray-300 bg-white hover:shadow-lg hover:-translate-y-1"
                 }`}>
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl group-hover:scale-100 transition-transform pb-1">
                 +
@@ -238,7 +242,7 @@ const onDelete = (id) => {
                 <p className="text-info" style={{ fontWeight: "bold" }} >Board Name</p>
                 <TextInput disabled={isSaveDisabled} value={draftBoard?.name} placeholder="Input board name" onChange={(e) => setDraftBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
-                  <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: isSaveDisabled || isBoardEmpty ? 'not-allowed' : 'pointer', backgroundColor: isSaveDisabled || isBoardEmpty ? '#7e8186' : '#337D35' }} onClick={onSave} disabled={isSaveDisabled || isBoardEmpty}>
+                  <button className="btn btn-primary text-white flex-1 disabled:bg-gray-300" style={{ cursor: isSaveDisabled || isBoardEmpty || isNameSame ? 'not-allowed' : 'pointer', backgroundColor: isSaveDisabled || isBoardEmpty || isNameSame ? '#7e8186' : '#337D35' }} onClick={onSave} disabled={isSaveDisabled || isBoardEmpty || isNameSame}>
                     SAVE
                   </button>
                 </div>
