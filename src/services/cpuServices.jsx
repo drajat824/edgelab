@@ -135,4 +135,24 @@ export const cpuService = {
       throw error;
     }
   },
+
+  // SESSION
+
+  checkStatus: async (token) => {
+    try {
+      const res = await api.post("/api/session/check", { token });
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  sendHeartbeat: async (token) => {
+    try {
+      const res = await api.post("/api/session/heartbeat", { token });
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
