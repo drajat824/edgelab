@@ -72,7 +72,7 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/status`);
+    const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/metrics`);
     wsStatus.onopen = () => console.log("Connected to Status WS");
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
