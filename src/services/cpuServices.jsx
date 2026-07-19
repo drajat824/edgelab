@@ -128,14 +128,6 @@ const apiServices = {
     }
   },
 
-  infoStream: async () => {
-    try {
-      return await apiAi.get("/video-info");
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // SESSION
 
   checkStatus: async (token) => {
