@@ -233,10 +233,10 @@ export default function Main() {
               disabled={streamMode === 1}
             />
             <Dropdown
-              width="w-30"
+              width="w-50"
               value={fps}
               onChange={(e) => onChangeFPS(e)}
-              valueLabel="FPS"
+              valueLabel="FPS Camera"
               options={[30, 25, 20, 15, 10, 5]}
             />
           </div>
@@ -411,7 +411,7 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Detection FPS</p>
+              <p className="text-title">Inference FPS</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Real-time:</p>
