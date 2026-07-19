@@ -20,7 +20,7 @@ import ActionLoading from "../components/ActionLoading.jsx";
 import useCPU from "../hooks/useCPU";
 
 // 5. API & Data Services
-import apiServices from "../services/cpuServices";
+import apiServices from "../services/apiServices";
 
 // 6. Utilities & Helpers
 import { generateCommandFunction } from "../utils/generateCommand";

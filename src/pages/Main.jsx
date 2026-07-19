@@ -6,7 +6,7 @@ import useCPU from "../hooks/useCPU";
 import useGround from "../hooks/useGround";
 
 // 3. API & Data Services
-import apiServices from "../services/cpuServices";
+import apiServices from "../services/apiServices";
 
 // 4. Reusable UI Components
 import ProgressBar from "../components/ProgressBar";

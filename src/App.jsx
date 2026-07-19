@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./components/Sidebar.jsx";
 import Loading from "./components/Loading.jsx";
-import apiServices from "./services/cpuServices.jsx";
+import apiServices from "./services/apiServices.jsx";
 import "./App.css";
 
 export default function App() {
