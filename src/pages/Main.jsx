@@ -13,7 +13,7 @@ import TextInput from "../components/TextInput";
 // CARDS IMAGES
 import CARDS from "../components/Cards";
 
-import { cpuService } from "../services/cpuServices";
+import apiServices from "../services/cpuServices";
 
 export default function Main() {
   const { cpu, dispatch } = useCPU();
@@ -88,13 +88,13 @@ export default function Main() {
     const handleVideoToggle = async () => {
       if (streamMode) {
         try {
-          await cpuService.startVideo();
+          await apiServices.startVideo();
         } catch (error) {
           console.error("Gagal menjalankan video:", error);
         }
       } else {
         try {
-          await cpuService.stopVideo();
+          await apiServices.stopVideo();
         } catch (error) {
           console.error("Gagal menjalankan video:", error);
         }
@@ -104,7 +104,7 @@ export default function Main() {
     handleVideoToggle();
 
     return () => {
-      cpuService.stopVideo();
+      apiServices.stopVideo();
     };
   }, [streamMode]);
 
@@ -113,7 +113,7 @@ export default function Main() {
   useEffect(() => {
     const handleInfoStream = async () => {
       try {
-        const data = await cpuService.stopVideo();
+        const data = await apiServices.stopVideo();
         if (data?.stream_status == "start") {
           setStreamMode(1);
         }
@@ -131,7 +131,7 @@ export default function Main() {
   // GET DATA AWAL
 
   useEffect(() => {
-    cpuService
+    apiServices
       .getGovernorStatus()
       .then((data) => {
         dispatch({
@@ -143,7 +143,7 @@ export default function Main() {
         console.error("Gagal sinkronisasi dengan hardware Linux:", err);
       });
 
-    cpuService
+    apiServices
       .getThread()
       .then((data) => {
         dispatch({
@@ -155,7 +155,7 @@ export default function Main() {
         console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
       });
 
-    cpuService
+    apiServices
       .getCores()
       .then((data) => {
         dispatch({
@@ -167,7 +167,7 @@ export default function Main() {
         console.error("Gagal sinkronisasi CORE hardware Linux:", err);
       });
 
-    cpuService
+    apiServices
       .getFps()
       .then((data) => {
         dispatch({
@@ -190,7 +190,7 @@ export default function Main() {
 
   const onChangeFPS = async (e) => {
     if (e === fps) return;
-    const response = await cpuService.updateFps({
+    const response = await apiServices.updateFps({
       fps: e,
     });
     if (response?.status != "success") return;
@@ -350,7 +350,7 @@ export default function Main() {
           <div className="flex flex-col gap-2 mt-4">
             {!!selectedBoard && (
               <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
-                <div className="grid grid-cols-4 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
+                <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
                   {itemBoard?.slots?.map((card, i) => {
                     return card?.value ? (
                       <img

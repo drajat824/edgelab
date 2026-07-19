@@ -10,7 +10,7 @@ import ButtonSave from "../components/ButtonSave";
 import { generateCommandFunction } from "../utils/generateCommand";
 
 // API
-import { cpuService } from "../services/cpuServices";
+import apiServices from "../services/cpuServices";
 
 // State Management
 import useCPU from "../hooks/useCPU";
@@ -37,7 +37,7 @@ export default function Cpu() {
 
   // AXIOS
   useEffect(() => {
-    cpuService
+    apiServices
       .getGovernorStatus()
       .then((data) => {
         console.log(data);
@@ -71,7 +71,7 @@ export default function Cpu() {
         console.error("Gagal sinkronisasi dengan hardware Linux:", err);
       });
 
-    cpuService
+    apiServices
       .getThread()
       .then((data) => {
         dispatch({
@@ -83,7 +83,7 @@ export default function Cpu() {
         console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
       });
 
-    cpuService
+    apiServices
       .getCores()
       .then((data) => {
         dispatch({
@@ -271,7 +271,7 @@ export default function Cpu() {
   // --- REFACTOR ACTION FUNCTIONS ---
   const onSaveFrequency = async () => {
     try {
-      const data = await cpuService.updateFrequency({
+      const data = await apiServices.updateFrequency({
         minFreq: freq.min,
         maxFreq: freq.max,
       });
@@ -298,7 +298,7 @@ export default function Cpu() {
 
   const onSaveTunnable = async () => {
     try {
-      const response = await cpuService.updateGovernorParams(
+      const response = await apiServices.updateGovernorParams(
         tunable[cpu?.governor],
       );
       const data = response?.data || response;
@@ -345,7 +345,7 @@ export default function Cpu() {
   const onSaveGovernor = async () => {
     if (governor !== cpu?.governor) {
       try {
-        const data = await cpuService.updateGovernor({ governor: governor });
+        const data = await apiServices.updateGovernor({ governor: governor });
         if (data && data.status === "success") {
           const command = generateCommandFunction({
             status: { governor: true },
@@ -382,7 +382,7 @@ export default function Cpu() {
 
   const onSaveThread = async () => {
     try {
-      const response = await cpuService.updateThread({
+      const response = await apiServices.updateThread({
         numThread: numThread,
       });
       const data = response?.data || response;
@@ -411,7 +411,7 @@ export default function Cpu() {
 
   const onSaveCore = async () => {
     try {
-      const response = await cpuService.updateCores({ cores: cores });
+      const response = await apiServices.updateCores({ cores: cores });
       const data = response?.data || response;
 
       if (data && data.status === "success") {

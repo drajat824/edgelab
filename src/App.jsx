@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./components/Sidebar.jsx";
 import Loading from "./components/Loading.jsx";
-import { cpuService } from "./services/cpuServices.jsx";
+import apiServices from "./services/cpuServices.jsx";
 import "./App.css";
 
 export default function App() {
@@ -20,7 +20,7 @@ export default function App() {
       const localToken = sessionStorage.getItem("gatekeeper_token");
 
       try {
-        const res = await cpuService.checkStatus(localToken);
+        const res = await apiServices.checkStatus(localToken);
         return { success: true, token: res.token };
       } catch (err) {
         if (err.message) {
@@ -55,7 +55,7 @@ export default function App() {
           heartbeatRef.current = setInterval(async () => {
             const currentToken = sessionStorage.getItem("gatekeeper_token");
             try {
-              await cpuService.sendHeartbeat(currentToken);
+              await apiServices.sendHeartbeat(currentToken);
             } catch (err) {
               handleKick("Your session has ended or been taken over.");
             }

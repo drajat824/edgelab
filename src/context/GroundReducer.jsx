@@ -15,6 +15,9 @@ export const initialState = [
             "Hearts_J",
             "Club_Q",
             "Hearts_K",
+            "Hearts_J",
+            "Club_Q",
+            "Hearts_K",
         ]
     },
     {
@@ -30,6 +33,9 @@ export const initialState = [
             "Spades_8",
             "Diamond_9",
             "Spades_10",
+            "Diamond_J",
+            "Spades_Q",
+            "Diamond_K",
             "Diamond_J",
             "Spades_Q",
             "Diamond_K",

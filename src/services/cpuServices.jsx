@@ -1,6 +1,6 @@
 import { api, apiAi } from "./api";
 
-export const cpuService = {
+const apiServices = {
   // GET GOVERNOR
   getGovernorStatus: async () => {
     try {
@@ -156,3 +156,5 @@ export const cpuService = {
     }
   },
 };
+
+export default apiServices
