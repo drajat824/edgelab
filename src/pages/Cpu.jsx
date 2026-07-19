@@ -1,4 +1,7 @@
+// 1. React Core & Hooks
 import { useEffect, useState, useMemo, useRef } from "react";
+
+// 2. Reusable UI Components
 import Dropdown from "../components/Dropdown";
 import InputWithUnit from "../components/TextInput";
 import Log from "../components/Log";
@@ -7,136 +10,90 @@ import Checkbox from "../components/Checkbox";
 import ScriptReference from "../components/ScriptReference";
 import ScriptEditor from "../components/ScriptEditor";
 import ButtonSave from "../components/ButtonSave";
-import { generateCommandFunction } from "../utils/generateCommand";
 
-// API
-import apiServices from "../services/cpuServices";
+// 3. Loading & Feedback Indicators
+import Loading from "../components/Loading.jsx";
+import Skeleton from "../components/Skeleton.jsx";
+import ActionLoading from "../components/ActionLoading.jsx";
 
-// State Management
+// 4. State Management & Custom Hooks
 import useCPU from "../hooks/useCPU";
 
+// 5. API & Data Services
+import apiServices from "../services/cpuServices";
+
+// 6. Utilities & Helpers
+import { generateCommandFunction } from "../utils/generateCommand";
+
 export default function Cpu() {
+  // Global Loading Indicators
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const isAutoAdjusting = useRef(false);
+
+  // CPU Core State Management
   const { cpu, dispatch } = useCPU();
   const freqRange = JSON.parse(import.meta.env.VITE_FREQ_RANGE);
 
-  // Governor & Data Draft
+  // Configuration Draft States
   const [governor, setGovernor] = useState(cpu?.governor);
   const [freq, setFreq] = useState({ max: cpu?.maxFreq, min: cpu?.minFreq });
-  const [tunable, setTunable] = useState({});
   const [numThread, setNumThread] = useState(cpu?.numThread);
   const [cores, setCores] = useState(cpu?.cores);
-
-  // Data asli & Status Perubahan
-  const [originalTunable, setOriginalTunable] = useState({});
-
-  // Script/logTunable command
-  const [logTunable, setLogTunable] = useState("");
-  const [logThreadCore, setLogThreadCore] = useState("");
-  const [logGeneral, setLogGeneral] = useState("");
   const [script, setScript] = useState(cpu?.userspace?.script);
 
-  // AXIOS
+  // Governor Tunable Parameters (Current Draft vs Hardware Baseline)
+  const [tunable, setTunable] = useState({});
+  const [originalTunable, setOriginalTunable] = useState({});
+
+  // Command Logs/Scripts Terminal Outputs
+  const [logGeneral, setLogGeneral] = useState("");
+  const [logTunable, setLogTunable] = useState("");
+  const [logThreadCore, setLogThreadCore] = useState("");
+
+  // Fetch Baseline Hardware Status on Mount with Smooth Transition Padding
   useEffect(() => {
-    apiServices
-      .getGovernorStatus()
-      .then((data) => {
+    setIsInitialLoading(true);
+    const startTime = Date.now();
+    const MINIMUM_DELAY = 800; // Minimal display loading (0.8 detik)
+
+    Promise.all([
+      apiServices.getGovernorStatus().then((data) => {
         console.log(data);
-
-        dispatch({
-          type: "CHANGE_GOVERNOR",
-          payload: data.governor,
-        });
-
+        dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
         dispatch({
           type: "CHANGE_GOVERNOR_CONFIG",
           payload: {
             governor: data.governor,
-            config: {
-              [data?.governor]: {
-                ...data?.tunables,
-              },
-            },
+            config: { [data?.governor]: { ...data?.tunables } },
           },
         });
-
         dispatch({
           type: "CHANGE_GOVERNOR_FREQUENCY",
-          payload: {
-            maxFreq: data.maxFreq,
-            minFreq: data.minFreq,
-          },
+          payload: { maxFreq: data.maxFreq, minFreq: data.minFreq },
         });
-      })
+      }),
+      apiServices.getThread().then((data) => {
+        dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.num_threads });
+      }),
+      apiServices.getCores().then((data) => {
+        dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
+      }),
+    ])
       .catch((err) => {
         console.error("Gagal sinkronisasi dengan hardware Linux:", err);
-      });
-
-    apiServices
-      .getThread()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_THREAD_CONFIG",
-          payload: data?.num_threads,
-        });
       })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
-      });
+      .finally(() => {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
 
-    apiServices
-      .getCores()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_CORE_CONFIG",
-          payload: data?.cores,
-        });
-      })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi CORE hardware Linux:", err);
+        setTimeout(() => {
+          setIsInitialLoading(false);
+        }, remainingTime);
       });
   }, [dispatch]);
 
-  // Input mana yang berubah
-  function getChangedFields(originalCpu, currentDraft) {
-    const changed = {
-      governor: originalCpu?.governor !== currentDraft.governor,
-      thread: originalCpu?.thread !== currentDraft.thread,
-      core: originalCpu?.core !== currentDraft.core,
-      freq: {
-        max:
-          String(originalCpu?.maxFreq ?? "") !==
-          String(currentDraft.freq?.max ?? ""),
-        min:
-          String(originalCpu?.minFreq ?? "") !==
-          String(currentDraft.freq?.min ?? ""),
-      },
-    };
-
-    // Pengecekan khusus untuk parameter di dalam masing-masing governor
-    const governors = [
-      "performance",
-      "conservative",
-      "powersave",
-      "ondemand",
-      "schedutil",
-      "userspace",
-    ];
-
-    governors.forEach((govName) => {
-      const govConfig = currentDraft[govName];
-      if (typeof govConfig !== "object" || govConfig === null) return;
-
-      changed[govName] = {};
-      Object.keys(govConfig).forEach((field) => {
-        changed[govName][field] =
-          originalCpu?.[govName]?.[field] !== govConfig[field];
-      });
-    });
-
-    return changed;
-  }
-
-  // --- 1. SINKRONISASI DATA DARI CPU CONTEXT ---
+  // Synchronize Context State Changes into Local Draft Form Fields
   useEffect(() => {
     if (!cpu?.governor) return;
     setGovernor(cpu.governor);
@@ -146,8 +103,6 @@ export default function Cpu() {
     if (!cpu) return;
     setFreq({ max: cpu.maxFreq, min: cpu.minFreq });
   }, [cpu?.maxFreq, cpu?.minFreq]);
-
-  // --- THREAD & CORES ---
 
   useEffect(() => {
     if (cpu?.thread === undefined) return;
@@ -186,7 +141,46 @@ export default function Cpu() {
     cpu?.userspace,
   ]);
 
-  // Banding Data
+  // Core Helper: Check for Modified Configuration Inputs
+  function getChangedFields(originalCpu, currentDraft) {
+    const changed = {
+      governor: originalCpu?.governor !== currentDraft.governor,
+      thread: originalCpu?.thread !== currentDraft.thread,
+      core: originalCpu?.core !== currentDraft.core,
+      freq: {
+        max:
+          String(originalCpu?.maxFreq ?? "") !==
+          String(currentDraft.freq?.max ?? ""),
+        min:
+          String(originalCpu?.minFreq ?? "") !==
+          String(currentDraft.freq?.min ?? ""),
+      },
+    };
+
+    const governors = [
+      "performance",
+      "conservative",
+      "powersave",
+      "ondemand",
+      "schedutil",
+      "userspace",
+    ];
+
+    governors.forEach((govName) => {
+      const govConfig = currentDraft[govName];
+      if (typeof govConfig !== "object" || govConfig === null) return;
+
+      changed[govName] = {};
+      Object.keys(govConfig).forEach((field) => {
+        changed[govName][field] =
+          originalCpu?.[govName]?.[field] !== govConfig[field];
+      });
+    });
+
+    return changed;
+  }
+
+  // Memoized: Global Form Modification Trackers
   const status = useMemo(() => {
     if (!Object.keys(originalTunable).length || !cpu) return {};
 
@@ -201,19 +195,16 @@ export default function Cpu() {
     return getChangedFields(cpu, currentDraft);
   }, [cpu, tunable, freq, governor, numThread, cores, originalTunable]);
 
-  // --- 3. STATUS TOMBOL SAVE BUTTON ---
+  // Memoized: Individual Save Buttons Disabled/Enabled Matrices
   const disabledButton = useMemo(() => {
     return Object.fromEntries(
       Object.entries(status).map(([key, value]) => {
-        // Handle properti top-level berbentuk boolean (governor, freq, thread, core)
         if (typeof value === "boolean") {
           const isFreqValid =
             key !== "freq" || (freq.max !== "" && freq.min !== "");
           return [key, value && isFreqValid];
         }
 
-        // Handle konfigurasi internal governor berbentuk objek
-        // 💡 REVISI: Mengubah 'tunablesDraft' yang typo menjadi 'tunable' sesuai deklarasi state atas
         const hasChanged = Object.values(value).some(Boolean);
         const hasEmpty = Object.entries(tunable[key] ?? {}).some(
           ([fieldKey, fieldValue]) => {
@@ -233,7 +224,7 @@ export default function Cpu() {
     );
   }, [status, tunable, freq]);
 
-  // --- 4. ACTION HANDLER FOR SAVE ---
+  // Abstract Core Driver for Generating Command Logs & Dispatching Changes
   const handleSaveAction = ({
     type,
     payload,
@@ -241,17 +232,14 @@ export default function Cpu() {
     targetDraft = {},
     logTarget = "tunable",
   }) => {
-    // 💡 PERBAIKAN: Tentukan secara tegas apakah ini aksi kustom (freq, thread, core) atau aksi tunable
     const isCustom = Object.keys(customStatus).length > 0;
-
-    // Jika kustom, gunakan customStatus utuh. Jika untuk tunable, isolasi hanya status milik governor aktif saat ini.
     const finalStatus = isCustom
       ? customStatus
-      : { [governor]: status[governor] }; // Bersih total, hanya membawa objek tunable governor aktif (misal: status.schedutil)
+      : { [governor]: status[governor] };
 
     const command = generateCommandFunction({
       status: finalStatus,
-      governor: governor, // 🚀 KIRIM GOVERNOR AKTIF SECARA EKSPLISIT KESINI
+      governor: governor,
       numThread: targetDraft.numThread || numThread,
       cores: targetDraft.cores || cores,
       draft: targetDraft.tunable || tunable,
@@ -268,8 +256,12 @@ export default function Cpu() {
     dispatch({ type, payload });
   };
 
-  // --- REFACTOR ACTION FUNCTIONS ---
+  // --- Hardware Call: Frequency Limits Update ---
   const onSaveFrequency = async () => {
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const ACTION_MIN_DELAY = 400; // Mencegah modal loading berkedip sekilas (0.4 detik)
+
     try {
       const data = await apiServices.updateFrequency({
         minFreq: freq.min,
@@ -279,10 +271,7 @@ export default function Cpu() {
       if (data && data.status === "success") {
         handleSaveAction({
           type: "CHANGE_GOVERNOR_FREQUENCY",
-          payload: {
-            maxFreq: data.maxFreq,
-            minFreq: data.minFreq,
-          },
+          payload: { maxFreq: data.maxFreq, minFreq: data.minFreq },
           customStatus: { freq: status.freq },
           targetDraft: { freqDraft: freq },
           logTarget: "general",
@@ -293,16 +282,26 @@ export default function Cpu() {
       }
     } catch (error) {
       console.error("Error saat mengeksekusi updateFrequency:", error);
+    } finally {
+      const remainingTime = Math.max(
+        0,
+        ACTION_MIN_DELAY - (Date.now() - startTime),
+      );
+      setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
 
+  // --- Hardware Call: Governor Parameters (Tunables) Update ---
   const onSaveTunnable = async () => {
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const ACTION_MIN_DELAY = 400;
+
     try {
       const response = await apiServices.updateGovernorParams(
         tunable[cpu?.governor],
       );
       const data = response?.data || response;
-      console.log(data, "data");
 
       if (data && data.status === "success") {
         handleSaveAction({
@@ -317,17 +316,12 @@ export default function Cpu() {
           type: "CHANGE_GOVERNOR_CONFIG",
           payload: {
             governor: data.governor,
-            config: {
-              [data?.governor]: {
-                ...data?.tunables,
-              },
-            },
+            config: { [data?.governor]: { ...data?.tunables } },
           },
           customStatus: {},
           targetDraft: { tunable },
           logTarget: "tunable",
         });
-
         console.log(
           `✓ Parameter untuk governor ${data.governor.toUpperCase()} berhasil diterapkan.`,
         );
@@ -339,52 +333,65 @@ export default function Cpu() {
       }
     } catch (error) {
       console.error("Error saat mengeksekusi updateGovernorParams:", error);
+    } finally {
+      const remainingTime = Math.max(
+        0,
+        ACTION_MIN_DELAY - (Date.now() - startTime),
+      );
+      setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
 
+  // --- Hardware Call: Main Scaling Governor Switch ---
   const onSaveGovernor = async () => {
-    if (governor !== cpu?.governor) {
-      try {
-        const data = await apiServices.updateGovernor({ governor: governor });
-        if (data && data.status === "success") {
-          const command = generateCommandFunction({
-            status: { governor: true },
-            governor: governor,
-            draft: { governor: governor },
-          });
-          setLogGeneral(command);
-          dispatch({
-            type: "CHANGE_GOVERNOR_CONFIG",
-            payload: {
-              governor: data.governor,
-              config: {
-                [data?.governor]: {
-                  ...data?.tunables,
-                },
-              },
-            },
-          });
-          dispatch({
-            type: "CHANGE_GOVERNOR",
-            payload: data.governor,
-          });
-        } else {
-          console.error(
-            "Gagal memperbarui governor melalui updateGovernor:",
-            data?.detail,
-          );
-        }
-      } catch (error) {
-        console.error("Error saat mengeksekusi updateGovernor:", error);
+    if (governor === cpu?.governor) return;
+
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const ACTION_MIN_DELAY = 400;
+
+    try {
+      const data = await apiServices.updateGovernor({ governor: governor });
+      if (data && data.status === "success") {
+        const command = generateCommandFunction({
+          status: { governor: true },
+          governor: governor,
+          draft: { governor: governor },
+        });
+        setLogGeneral(command);
+        dispatch({
+          type: "CHANGE_GOVERNOR_CONFIG",
+          payload: {
+            governor: data.governor,
+            config: { [data?.governor]: { ...data?.tunables } },
+          },
+        });
+        dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
+      } else {
+        console.error(
+          "Gagal memperbarui governor melalui updateGovernor:",
+          data?.detail,
+        );
       }
+    } catch (error) {
+      console.error("Error saat mengeksekusi updateGovernor:", error);
+    } finally {
+      const remainingTime = Math.max(
+        0,
+        ACTION_MIN_DELAY - (Date.now() - startTime),
+      );
+      setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
 
+  // --- Hardware Call: Execution Workers Thread Allocation ---
   const onSaveThread = async () => {
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const ACTION_MIN_DELAY = 400;
+
     try {
-      const response = await apiServices.updateThread({
-        numThread: numThread,
-      });
+      const response = await apiServices.updateThread({ numThread: numThread });
       const data = response?.data || response;
 
       if (data && data.status === "success") {
@@ -406,10 +413,21 @@ export default function Cpu() {
       }
     } catch (error) {
       console.error("Error saat mengeksekusi updateThread:", error);
+    } finally {
+      const remainingTime = Math.max(
+        0,
+        ACTION_MIN_DELAY - (Date.now() - startTime),
+      );
+      setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
 
+  // --- Hardware Call: Core Affinity Pinning Settings ---
   const onSaveCore = async () => {
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const ACTION_MIN_DELAY = 400;
+
     try {
       const response = await apiServices.updateCores({ cores: cores });
       const data = response?.data || response;
@@ -422,7 +440,6 @@ export default function Cpu() {
           targetDraft: { cores: cores },
           logTarget: "threadCore",
         });
-
         console.log(
           `✓ Core pinning berhasil diterapkan pada core: [${data.cores.join(", ")}].`,
         );
@@ -434,13 +451,16 @@ export default function Cpu() {
       }
     } catch (error) {
       console.error("Error saat mengeksekusi updateCores:", error);
+    } finally {
+      const remainingTime = Math.max(
+        0,
+        ACTION_MIN_DELAY - (Date.now() - startTime),
+      );
+      setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
 
-  // Adjust CPU Min !> Max
-
-  const isAutoAdjusting = useRef(false);
-
+  // Safety Validation: Intercept Userspace Freq Bound Violation
   useEffect(() => {
     if (!cpu || cpu?.governor !== "userspace") return;
 
@@ -457,21 +477,35 @@ export default function Cpu() {
 
       return {
         ...prev,
-        userspace: {
-          ...prev.userspace,
-          fixedFrequency: newFreq,
-        },
+        userspace: { ...prev.userspace, fixedFrequency: newFreq },
       };
     });
   }, [cpu?.maxFreq, cpu?.minFreq, cpu?.governor]);
 
+  // Trigger Automatic Hardware Sync post Safety Violation Auto-Adjustment
   useEffect(() => {
     if (!tunable?.userspace?.fixedFrequency) return;
     if (isAutoAdjusting.current) {
-      onSaveTunnable(); // Eksekusi save otomatis
-      isAutoAdjusting.current = false; // Reset kembali flag-nya
+      onSaveTunnable();
+      isAutoAdjusting.current = false;
     }
   }, [tunable?.userspace?.fixedFrequency]);
+
+  if (!!isInitialLoading)
+    return (
+      <div className="parent h-full">
+        <h1 className="text-xtitle">
+          DVFS
+          <span className="font-normal text-gray-500 ml-1">
+            (Dynamic Voltage and Frequency Scaling)
+          </span>
+        </h1>
+        <p className="text-subinfo mt-2 text-gray-500">
+          Manage CPU performance by adjusting voltage and frequency dynamically.
+        </p>
+        <Skeleton />
+      </div>
+    );
 
   return (
     <div className="parent h-full">
@@ -1363,6 +1397,7 @@ export default function Cpu() {
 
         <Log value={logThreadCore} />
       </div>
+      {!!isActionLoading && <ActionLoading />}
     </div>
   );
 }

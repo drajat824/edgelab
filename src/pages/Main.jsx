@@ -1,25 +1,39 @@
+// 1. React Core & Hooks
 import { useState, useEffect } from "react";
-import Play from "../assets/play.svg";
-import Stop from "../assets/stop.svg";
-import ProgressBar from "../components/ProgressBar";
-import Dropdown from "../components/Dropdown";
 
-// State Management
+// 2. State Management & Custom Hooks
 import useCPU from "../hooks/useCPU";
 import useGround from "../hooks/useGround";
 
-import TextInput from "../components/TextInput";
-
-// CARDS IMAGES
-import CARDS from "../components/Cards";
-
+// 3. API & Data Services
 import apiServices from "../services/cpuServices";
 
+// 4. Reusable UI Components
+import ProgressBar from "../components/ProgressBar";
+import Dropdown from "../components/Dropdown";
+import TextInput from "../components/TextInput";
+import Loading from "../components/Loading.jsx";
+import Skeleton from "../components/Skeleton.jsx";
+import ActionLoading from "../components/ActionLoading.jsx";
+
+// 5. Assets, Images & Constants
+import Play from "../assets/play.svg";
+import Stop from "../assets/stop.svg";
+import CARDS from "../components/Cards";
+
 export default function Main() {
+  // Custom Hooks Configuration Context
   const { cpu, dispatch } = useCPU();
   const { boards } = useGround();
+
+  // Static API Endpoints
   const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
 
+  // Global Page Loading States
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Real-time CPU Performance Metrics
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
     cores: [0, 0, 0, 0],
@@ -29,17 +43,65 @@ export default function Main() {
     temperature: 0.0,
   });
 
+  // Object Detection Model & Camera Framing
   const [model, setModel] = useState("SSD MobileNet V3 Small");
   const [fps, setFps] = useState(cpu?.fpsCamera);
   const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
 
-  // BOARD
-
+  // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
   const [selectedBoard, setSelectedBoard] = useState(boards[0]?.board_name);
 
-  // MATCH ITEM BOARD TER-SELECT DENGAN GAMBAR
+  // Fetch Hardware State & Stream Status on Page Mount
+  useEffect(() => {
+    setIsInitialLoading(true);
 
+    const fetchInitialData = async () => {
+      const startTime = Date.now();
+      const MINIMUM_DELAY = 500; // Minimal display loading padding (0.5 detik)
+
+      try {
+        await Promise.all([
+          apiServices.getGovernorStatus().then((data) => {
+            dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
+          }),
+          apiServices.getThread().then((data) => {
+            dispatch({
+              type: "CHANGE_THREAD_CONFIG",
+              payload: data?.num_threads,
+            });
+          }),
+          apiServices.getCores().then((data) => {
+            dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
+          }),
+          apiServices.getFps().then((data) => {
+            dispatch({ type: "CHANGE_FPS_CONFIG", payload: data?.fps_camera });
+          }),
+          apiServices.stopVideo().then((data) => {
+            if (data?.stream_status === "start") setStreamMode(1);
+            if (data?.stream_status === "stop") setStreamMode(0);
+          }),
+        ]);
+      } catch (err) {
+        console.error("Gagal sinkronisasi data awal hardware:", err);
+      } finally {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
+        setTimeout(() => {
+          setIsInitialLoading(false);
+        }, remainingTime);
+      }
+    };
+
+    fetchInitialData();
+  }, [dispatch]);
+
+  // Keep Sync Camera FPS inside Local Draft State with CPU Context Updates
+  useEffect(() => {
+    setFps(cpu?.fpsCamera);
+  }, [cpu?.fpsCamera]);
+
+  // Match Selected Evaluation Board with Local Reference JSON Data
   useEffect(() => {
     if (!boards || !selectedBoard) return;
     const targetBoard = boards.find((e) => e.board_name === selectedBoard);
@@ -56,10 +118,9 @@ export default function Main() {
 
       setItemBoard(transformedBoard);
     }
-  }, [selectedBoard]);
+  }, [selectedBoard, boards]);
 
-  // WEBSOCKET -  CPU UTILICATION BAR
-
+  // Telemetry Pipeline: CPU Utilization Multicore Core Bars
   useEffect(() => {
     const ws = new WebSocket(`${import.meta.env.VITE_API}/ws/utilization`);
     ws.onopen = () => console.log("Connected to Utilization WS");
@@ -71,6 +132,7 @@ export default function Main() {
     return () => ws.close();
   }, []);
 
+  // Telemetry Pipeline: Hardware Thermal & Core Clock Speed Frequencies
   useEffect(() => {
     const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/metrics`);
     wsStatus.onopen = () => console.log("Connected to Status WS");
@@ -82,123 +144,72 @@ export default function Main() {
     return () => wsStatus.close();
   }, []);
 
-  // START - STOP STREAM
-
+  // Handle Toggle Pipeline For Video Capture Frames Streaming
   useEffect(() => {
     const handleVideoToggle = async () => {
-      if (streamMode) {
-        try {
+      setIsActionLoading(true);
+      const startTime = Date.now();
+      const MINIMUM_DELAY = 400;
+
+      try {
+        if (streamMode) {
           await apiServices.startVideo();
-        } catch (error) {
-          console.error("Gagal menjalankan video:", error);
-        }
-      } else {
-        try {
+        } else {
           await apiServices.stopVideo();
-        } catch (error) {
-          console.error("Gagal menjalankan video:", error);
         }
+      } catch (error) {
+        console.error("Gagal menjalankan/menghentikan video:", error);
+      } finally {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
+        setTimeout(() => {
+          setIsActionLoading(false);
+        }, remainingTime);
       }
     };
 
     handleVideoToggle();
-
     return () => {
       apiServices.stopVideo();
     };
   }, [streamMode]);
 
-  // KONDISI AWAL STREAM
-
-  useEffect(() => {
-    const handleInfoStream = async () => {
-      try {
-        const data = await apiServices.stopVideo();
-        if (data?.stream_status == "start") {
-          setStreamMode(1);
-        }
-        if (data?.stream_status == "stop") {
-          setStreamMode(0);
-        }
-      } catch (error) {
-        console.error("Gagal menjalankan video:", error);
-      }
-    };
-
-    handleInfoStream();
-  }, []);
-
-  // GET DATA AWAL
-
-  useEffect(() => {
-    apiServices
-      .getGovernorStatus()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_GOVERNOR",
-          payload: data.governor,
-        });
-      })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi dengan hardware Linux:", err);
-      });
-
-    apiServices
-      .getThread()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_THREAD_CONFIG",
-          payload: data?.num_threads,
-        });
-      })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi THREAD hardware Linux:", err);
-      });
-
-    apiServices
-      .getCores()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_CORE_CONFIG",
-          payload: data?.cores,
-        });
-      })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi CORE hardware Linux:", err);
-      });
-
-    apiServices
-      .getFps()
-      .then((data) => {
-        dispatch({
-          type: "CHANGE_FPS_CONFIG",
-          payload: data?.fps_camera,
-        });
-      })
-      .catch((err) => {
-        console.error("Gagal sinkronisasi FPS hardware Linux:", err);
-      });
-  }, [dispatch]);
-
-  // GET FPS CAMERA
-
-  useEffect(() => {
-    setFps(cpu?.fpsCamera);
-  }, [cpu?.fpsCamera]);
-
-  // CHANGE FPS
-
+  // Hardware Driver Interaction: Modify Video FPS Threshold
   const onChangeFPS = async (e) => {
     if (e === fps) return;
-    const response = await apiServices.updateFps({
-      fps: e,
-    });
-    if (response?.status != "success") return;
-    dispatch({
-      type: "CHANGE_FPS_CONFIG",
-      payload: e,
-    });
+    setIsActionLoading(true);
+    const startTime = Date.now();
+    const MINIMUM_DELAY = 400;
+
+    try {
+      const response = await apiServices.updateFps({ fps: e });
+      if (response?.status === "success") {
+        dispatch({
+          type: "CHANGE_FPS_CONFIG",
+          payload: e,
+        });
+      }
+    } catch (error) {
+      console.error("Gagal memperbarui FPS:", error);
+    } finally {
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
+      setTimeout(() => {
+        setIsActionLoading(false);
+      }, remainingTime);
+    }
   };
+
+  if (!!isInitialLoading)
+    return (
+      <div className="parent">
+        <h1 className="text-xtitle">Main Monitor</h1>
+        <p className="text-subinfo mt-2 text-gray-500">
+          Monitor camera streams along with model and CPU metrics.
+        </p>
+        <Skeleton />
+      </div>
+    );
 
   return (
     <div className="parent">
@@ -463,6 +474,7 @@ export default function Main() {
           </div>
         </div>
       </div>
+      {!!isActionLoading && <ActionLoading />}
     </div>
   );
 }
