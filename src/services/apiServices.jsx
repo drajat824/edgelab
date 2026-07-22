@@ -99,11 +99,10 @@ const apiServices = {
     }
   },
 
-  updateFps: async ({ fps }) => {
-    console.log(fps);
+  updateFps: async ({ cameraFps }) => {
     try {
       return await apiAi.post("/api/fps", {
-        fps_camera: fps,
+        fps_camera: cameraFps,
       });
     } catch (error) {
       throw error;

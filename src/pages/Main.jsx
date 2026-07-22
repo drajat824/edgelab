@@ -1,5 +1,5 @@
 // 1. React Core & Hooks
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // 2. State Management & Custom Hooks
 import useCPU from "../hooks/useCPU";
@@ -46,8 +46,52 @@ export default function Main() {
 
   // Object Detection Model & Camera Framing
   const [model, setModel] = useState("SSD MobileNet V3 Small");
-  const [fps, setFps] = useState(cpu?.fpsCamera);
+  const [cameraFps, setCameraFps] = useState(cpu?.fpsCamera);
   const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
+  const [inferenceFps, setInferenceFps] = useState({ realtime: 0, avg: 0 });
+  const [forwardPass, setForwardPass] = useState({ realtime: 0, avg: 0 });
+
+  // Kontrol Average
+  const [isRecording, setIsRecording] = useState(false);
+  const [targetSamples, setTargetSamples] = useState(100); // Default 100
+  const [avgProgress, setAvgProgress] = useState(0);
+
+  // Ref Buffer & Throttle
+  const fpsBufferRef = useRef([]);
+  const forwardPassBufferRef = useRef([]);
+  const lastUpdateRef = useRef(0);
+
+  // Ref
+  const isRecordingRef = useRef(isRecording);
+  const targetSamplesRef = useRef(targetSamples);
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  useEffect(() => {
+    targetSamplesRef.current = targetSamples;
+  }, [targetSamples]);
+
+  // Heeelper Average
+  const getAverage = (buffer, newValue, maxWindow) => {
+    buffer.push(newValue);
+    if (buffer.length > maxWindow) {
+      buffer.shift();
+    }
+    const sum = buffer.reduce((acc, curr) => acc + curr, 0);
+    return Number((sum / buffer.length).toFixed(2));
+  };
+
+  // Clear/Reset Data Average
+  const handleClear = () => {
+    fpsBufferRef.current = [];
+    forwardPassBufferRef.current = [];
+    setIsRecording(false); // Matikan status recording jika aktif
+    setAvgProgress(0);
+    setInferenceFps((prev) => ({ ...prev, avg: 0 }));
+    setForwardPass((prev) => ({ ...prev, avg: 0 }));
+  };
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
@@ -93,12 +137,15 @@ export default function Main() {
           }),
           apiServices.stopVideo().then((data) => {
             if (data?.stream_status === "start") setStreamMode(1);
-            if (data?.stream_status === "stop") setStreamMode(0);
+            if (data?.stream_status === "stop") {
+              (setStreamMode(0), setIsRecording(false));
+            }
           }),
         ]);
       } catch (err) {
-        console.log(err)
+        console.log(err);
         setStreamMode(null);
+        setIsRecording(false)
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -122,7 +169,7 @@ export default function Main() {
 
   // Keep Sync Camera FPS inside Local Draft State with CPU Context Updates
   useEffect(() => {
-    setFps(cpu?.fpsCamera);
+    setCameraFps(cpu?.fpsCamera);
   }, [cpu?.fpsCamera]);
 
   // Match Selected Evaluation Board with Local Reference JSON Data
@@ -172,12 +219,69 @@ export default function Main() {
   useEffect(() => {
     const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
     ws.onopen = () => console.log("Connected to Inference WS");
+
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // console.log(data);
+      try {
+        const data = JSON.parse(event.data);
+        const rawFps = Number(data?.inference_fps) || 0;
+        const rawForwardPass = Number(data?.forward_pass_ms) || 0;
+
+        // 1. ISI BUFFER DENGAN SLIDING WINDOW (Gunakan Shift jika penuh)
+        if (isRecordingRef.current) {
+          const maxSamples = targetSamplesRef.current;
+
+          // Tambahkan data baru
+          fpsBufferRef.current.push(rawFps);
+          forwardPassBufferRef.current.push(rawForwardPass);
+
+          // Jika jumlah data melebihi maxSamples, BUANG data paling lama (Sliding)
+          if (fpsBufferRef.current.length > maxSamples) {
+            fpsBufferRef.current.shift();
+            forwardPassBufferRef.current.shift();
+          }
+        }
+
+        // 2. THROTTLE UPDATE UI
+        const now = Date.now();
+        if (now - lastUpdateRef.current >= 300) {
+          lastUpdateRef.current = now;
+
+          const currentCount = fpsBufferRef.current.length;
+          const maxSamples = targetSamplesRef.current;
+
+          // Hitung progress ketercukupan sampel (mentok di 100%)
+          const calculatedProgress = maxSamples > 0 ? Math.min(Math.round((currentCount / maxSamples) * 100), 100) : 0;
+
+          // Hitung rata-rata dari N data TERAKHIR yang ada di buffer
+          const avgFps = currentCount > 0 ? Number((fpsBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
+          const avgForwardPass = currentCount > 0 ? Number((forwardPassBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
+
+          setAvgProgress(calculatedProgress);
+
+          if (isRecordingRef.current) {
+            setInferenceFps({
+              realtime: Number(rawFps.toFixed(2)),
+              avg: avgFps,
+            });
+            setForwardPass({
+              realtime: Number(rawForwardPass.toFixed(2)),
+              avg: avgForwardPass,
+            });
+          } else {
+            // Jika Pause, pertahankan nilai avg terakhir
+            setInferenceFps((prev) => ({ ...prev, realtime: Number(rawFps.toFixed(2)) }));
+            setForwardPass((prev) => ({ ...prev, realtime: Number(rawForwardPass.toFixed(2)) }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to parse WebSocket message:", error);
+      }
     };
+
     ws.onclose = () => console.log("Disconnected from Inference WS");
-    return () => ws.close();
+    return () => {
+      ws.close();
+    };
   }, []);
 
   // Handle Toggle Pipeline For Video Capture Frames Streaming
@@ -194,6 +298,7 @@ export default function Main() {
           await apiServices.stopVideo();
         }
       } catch (error) {
+        setIsRecording(false)
         setStreamMode(null);
         setModalConfig({
           isOpen: true,
@@ -222,13 +327,14 @@ export default function Main() {
 
   // Hardware Driver Interaction: Modify Video FPS Threshold
   const onChangeFPS = async (e) => {
-    if (e === fps) return;
+    if (e === cameraFps) return;
     setIsActionLoading(true);
     const startTime = Date.now();
     const MINIMUM_DELAY = 400;
 
     try {
-      const response = await apiServices.updateFps({ fps: e });
+      const response = await apiServices.updateFps({ cameraFps: e });
+      console.log(response);
       if (response?.status === "success") {
         dispatch({
           type: "CHANGE_FPS_CONFIG",
@@ -276,7 +382,7 @@ export default function Main() {
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
             <Dropdown width="w-65" value={model} onChange={setModel} options={["SSD MobileNet V3 Small", "SSD MobileNet V3 Large"]} disabled={streamMode === 1} />
-            <Dropdown width="w-50" value={fps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+            <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
           </div>
 
           {/* CHILD  */}
@@ -302,7 +408,14 @@ export default function Main() {
                 <img src={Play} alt="Play" className="w-7 h-7 mr-1 inline-block" />
                 <p>Start</p>
               </button>
-              <button style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }} disabled={streamMode === 0 || streamMode === null} className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]" onClick={() => setStreamMode(0)}>
+              <button
+                style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }}
+                disabled={streamMode === 0 || streamMode === null}
+                className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
+                onClick={() => {
+                  (setStreamMode(0), setIsRecording(false));
+                }}
+              >
                 <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
                 <p>Stop</p>
               </button>
@@ -373,7 +486,9 @@ export default function Main() {
                   })}
                 </div>
               </div>
-            ): <div />}
+            ) : (
+              <div />
+            )}
 
             <div className="card">
               <p className="text-title">Accuracy Metrics</p>
@@ -391,28 +506,44 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Forward-pass Time</p>
+              <p className="text-title">Real-time Data</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">Real-time:</p>
-                  <p className="text-info">Average (10):</p>
+                  <p className="text-info">Forward-pass:</p>
+                  <p className="text-info">Inference FPS:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">80000ms</p>
-                  <p className="text-info">1900000ms</p>
+                  <p className="text-info">{forwardPass?.realtime} ms</p>
+                  <p className="text-info">{inferenceFps?.realtime} ms</p>
                 </div>
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Inference FPS</p>
+              <div className="flex items-center gap-2">
+                <p className="text-title">Average </p>
+                <TextInput disabled={isRecording} width="w-15" type="number" min="1" max="1000" value={targetSamples} onChange={(e) => setTargetSamples(Math.max(1, Number(e.target.value)))} className="text-center" />
+                <p className="text-title">Data</p>
+              </div>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">Real-time:</p>
-                  <p className="text-info">Average (10):</p>
+                  <p className="text-info">Forward-pass:</p>
+                  <p className="text-info">Inference FPS:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">80000ms</p>
-                  <p className="text-info">1900000ms</p>
+                  <p className="text-info">{forwardPass.avg} ms</p>
+                  <p className="text-info">{inferenceFps?.avg} ms</p>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-col gap-2">
+                <span>Sample Completeness: {avgProgress}%</span>
+                <ProgressBar value={avgProgress} type="avg" />
+                <div className="flex items-center gap-2">
+                  <button disabled={streamMode == 0 || streamMode == null} onClick={() => setIsRecording(!isRecording)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:hover:bg-gray-300 ${isRecording ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
+                    {isRecording ? "Pause" : "Count"}
+                  </button>
+                  <button disabled={streamMode == 0 || streamMode == null} type="button" onClick={handleClear} className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100">
+                    Clear
+                  </button>
                 </div>
               </div>
             </div>
