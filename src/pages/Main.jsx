@@ -87,7 +87,7 @@ export default function Main() {
   const handleClear = () => {
     fpsBufferRef.current = [];
     forwardPassBufferRef.current = [];
-    setIsRecording(false); // Matikan status recording jika aktif
+    // setIsRecording(false);
     setAvgProgress(0);
     setInferenceFps((prev) => ({ ...prev, avg: 0 }));
     setForwardPass((prev) => ({ ...prev, avg: 0 }));
