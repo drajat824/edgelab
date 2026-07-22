@@ -6,9 +6,10 @@ import { DragDropProvider } from "@dnd-kit/react";
 import Draggable from "../components/Draggable";
 import Droppable from "../components/Droppable";
 import TextInput from "../components/TextInput";
-import Skeleton from "../components/Skeleton.jsx";
-import ActionLoading from "../components/ActionLoading.jsx";
+import Skeleton from "../components/Skeleton";
+import ActionLoading from "../components/ActionLoading";
 import CARDS from "../components/Cards";
+import ModalAlert from "../components/ModalAlert";
 
 // 3. Hooks & State Management
 import useGround from "../hooks/useGround";
@@ -30,7 +31,6 @@ const defaultBoard = () => ({
 });
 
 export default function Ground() {
-
   // 1. Hooks & Global/Local States
   const { boards, dispatch } = useGround();
 
@@ -40,6 +40,19 @@ export default function Ground() {
   const [displayBoards, setDisplayBoards] = useState([]);
   const [draftBoard, setDraftBoard] = useState(defaultBoard());
   const [isAddData, setAddData] = useState(false);
+
+  // ModalAlert
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "confirm",
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // 2. Computed Values & Form Validations
   const isBoardEmpty = draftBoard?.slots?.every((slot) => slot.value === null) || !draftBoard?.name?.trim();
@@ -90,7 +103,15 @@ export default function Ground() {
           setDisplayBoards(transformed);
         }
       } catch (error) {
-        console.error("Gagal mengambil data boards:", error);
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Failed",
+          message: error?.message || "Failed to retrieve board data.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       }
     }, 500);
 
@@ -146,25 +167,51 @@ export default function Ground() {
         setAddData(false);
         setDraftBoard(defaultBoard());
       } catch (error) {
-        console.error("Gagal menyimpan board:", error);
-        alert(error?.response?.data?.detail || "Gagal menyimpan data ke server.");
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Failed",
+          message: error?.message || "Failed to save data to the server.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       }
     }, 400);
 
     setIsActionLoading(false);
   };
 
-  const onDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this board?")) return;
+  const onDelete = (id) => {
+    setModalConfig({
+      isOpen: true,
+      type: "error", // Merah untuk aksi hapus
+      title: "Deletion Confirmation",
+      message: "Are you sure you want to delete this board? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: () => confirmDelete(id),
+    });
+  };
+
+  const confirmDelete = async (id) => {
+    closeModal();
     setIsActionLoading(true);
+
     await withMinimumDelay(async () => {
       try {
         await apiServices.deleteGT({ board_id: id });
-        // Refresh data
         await fetchBoards(false);
       } catch (error) {
-        console.error("Gagal menghapus board:", error);
-        alert(error?.response?.data?.detail || "Gagal menghapus board dari server.");
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Failed",
+          message: error?.response?.data?.detail || "Failed to delete the board from the server.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       }
     }, 400);
 
@@ -338,6 +385,7 @@ export default function Ground() {
         </DragDropProvider>
       </div>
       {!!isActionLoading && <ActionLoading />}
+      <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />
     </div>
   );
 }

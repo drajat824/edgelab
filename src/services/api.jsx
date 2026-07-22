@@ -12,7 +12,7 @@ api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const errorMessage =
-      error.response?.data?.detail || "Terjadi kesalahan pada server";
+      error.response?.data?.detail || "A server error occurred.";
     return Promise.reject(new Error(errorMessage));
   },
 );
@@ -31,7 +31,7 @@ apiAi.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const errorMessage =
-      error.response?.data?.detail || "Terjadi kesalahan pada server";
+      error.response?.data?.detail || "A server error occurred.";
     return Promise.reject(new Error(errorMessage));
   },
 );
