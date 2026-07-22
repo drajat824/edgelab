@@ -144,6 +144,18 @@ export default function Main() {
     return () => wsStatus.close();
   }, []);
 
+  // Model Pipeline: Inference
+  useEffect(() => {
+    const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
+    ws.onopen = () => console.log("Connected to Inference WS");
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // console.log(data);
+    };
+    ws.onclose = () => console.log("Disconnected from Inference WS");
+    return () => ws.close();
+  }, []);
+
   // Handle Toggle Pipeline For Video Capture Frames Streaming
   useEffect(() => {
     const handleVideoToggle = async () => {
