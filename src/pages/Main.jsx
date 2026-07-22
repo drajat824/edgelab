@@ -15,6 +15,7 @@ import TextInput from "../components/TextInput";
 import Loading from "../components/Loading.jsx";
 import Skeleton from "../components/Skeleton.jsx";
 import ActionLoading from "../components/ActionLoading.jsx";
+import ModalAlert from "../components/ModalAlert";
 
 // 5. Assets, Images & Constants
 import Play from "../assets/play.svg";
@@ -50,7 +51,20 @@ export default function Main() {
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
-  const [selectedBoard, setSelectedBoard] = useState(boards? boards[0]?.board_name : '-');
+  const [selectedBoard, setSelectedBoard] = useState(boards ? boards[0]?.board_name : "-");
+
+  // ModalAlert
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "confirm",
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // Fetch Hardware State & Stream Status on Page Mount
   useEffect(() => {
@@ -83,7 +97,16 @@ export default function Main() {
           }),
         ]);
       } catch (err) {
-        console.error("Gagal sinkronisasi data awal hardware:", err);
+        console.error("Failed initial hardware data synchronization:", err);
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Sync Failed",
+          message: err?.response?.data?.detail || err?.message || "Failed to synchronize initial hardware data.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       } finally {
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
@@ -170,7 +193,16 @@ export default function Main() {
           await apiServices.stopVideo();
         }
       } catch (error) {
-        console.error("Gagal menjalankan/menghentikan video:", error);
+        console.error("Failed to start/stop video:", error);
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Video Control Failed",
+          message: error?.response?.data?.detail || error?.message || "Failed to start or stop the video.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       } finally {
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
@@ -202,7 +234,16 @@ export default function Main() {
         });
       }
     } catch (error) {
-      console.error("Gagal memperbarui FPS:", error);
+      console.error("Failed to update FPS:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update FPS settings.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
@@ -216,9 +257,7 @@ export default function Main() {
     return (
       <div className="parent">
         <h1 className="text-xtitle">Main Monitor</h1>
-        <p className="text-subinfo mt-2 text-gray-500">
-          Monitor camera streams along with model and CPU metrics.
-        </p>
+        <p className="text-subinfo mt-2 text-gray-500">Monitor camera streams along with model and CPU metrics.</p>
         <Skeleton />
       </div>
     );
@@ -226,9 +265,7 @@ export default function Main() {
   return (
     <div className="parent">
       <h1 className="text-xtitle">Main Monitor</h1>
-      <p className="text-subinfo mt-2 text-gray-500">
-        Monitor camera streams along with model and CPU metrics.
-      </p>
+      <p className="text-subinfo mt-2 text-gray-500">Monitor camera streams along with model and CPU metrics.</p>
 
       {/* Main Streaming  */}
 
@@ -237,20 +274,8 @@ export default function Main() {
         <div className="flex flex-col flex-1">
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
-            <Dropdown
-              width="w-65"
-              value={model}
-              onChange={setModel}
-              options={["SSD MobileNet V3 Small", "SSD MobileNet V3 Large"]}
-              disabled={streamMode === 1}
-            />
-            <Dropdown
-              width="w-50"
-              value={fps}
-              onChange={(e) => onChangeFPS(e)}
-              valueLabel="FPS Camera"
-              options={[30, 25, 20, 15, 10, 5]}
-            />
+            <Dropdown width="w-65" value={model} onChange={setModel} options={["SSD MobileNet V3 Small", "SSD MobileNet V3 Large"]} disabled={streamMode === 1} />
+            <Dropdown width="w-50" value={fps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
           </div>
 
           {/* CHILD  */}
@@ -259,11 +284,7 @@ export default function Main() {
             {/* Streaming Camera */}
             <div className="card-stream w-full h-fit flex items-center justify-center">
               {streamMode ? (
-                <img
-                  src={videoUrl}
-                  alt="Live Video Feed"
-                  className="w-full h-full object-contain rounded-lg"
-                />
+                <img src={videoUrl} alt="Live Video Feed" className="w-full h-full object-contain rounded-lg" />
               ) : (
                 <div className="h-[376.5px] w-full object-contain bg-black rounded-lg flex items-center justify-center">
                   <p className="text-white text-4xl text-center">
@@ -276,30 +297,12 @@ export default function Main() {
 
             {/* Button */}
             <div className="flex justify-between gap-4 items-end">
-              <button
-                style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
-                disabled={streamMode === 1}
-                className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]"
-                onClick={() => setStreamMode(1)}
-              >
-                <img
-                  src={Play}
-                  alt="Play"
-                  className="w-7 h-7 mr-1 inline-block"
-                />
+              <button style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }} disabled={streamMode === 1} className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]" onClick={() => setStreamMode(1)}>
+                <img src={Play} alt="Play" className="w-7 h-7 mr-1 inline-block" />
                 <p>Start</p>
               </button>
-              <button
-                style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }}
-                disabled={streamMode === 0}
-                className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
-                onClick={() => setStreamMode(0)}
-              >
-                <img
-                  src={Stop}
-                  alt="Stop"
-                  className="w-7 h-7 mr-2 inline-block"
-                />
+              <button style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }} disabled={streamMode === 0} className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]" onClick={() => setStreamMode(0)}>
+                <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
                 <p>Stop</p>
               </button>
             </div>
@@ -310,26 +313,20 @@ export default function Main() {
                 {/* CPU Utilization */}
                 <div className="card w-full h-full rounded-lg shadow-md gap-4">
                   <p className="text-title">CPU Utilization</p>
-                  <p className="text-info mb-4 mt-2">
-                    Average: {cpuUtilization?.average}%
-                  </p>
+                  <p className="text-info mb-4 mt-2">Average: {cpuUtilization?.average}%</p>
                   <div className="flex gap-8 mb-4">
                     <div className="gap-2 w-full">
                       <ProgressBar value={cpuUtilization?.cores[0]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 0</span>
-                        <span className="text-subinfo">
-                          {cpuUtilization?.cores[0]}%
-                        </span>
+                        <span className="text-subinfo">{cpuUtilization?.cores[0]}%</span>
                       </div>
                     </div>
                     <div className="gap-2 w-full">
                       <ProgressBar value={cpuUtilization?.cores[2]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 2</span>
-                        <span className="text-subinfo">
-                          {cpuUtilization?.cores[2]}%
-                        </span>
+                        <span className="text-subinfo">{cpuUtilization?.cores[2]}%</span>
                       </div>
                     </div>
                   </div>
@@ -338,18 +335,14 @@ export default function Main() {
                       <ProgressBar value={cpuUtilization?.cores[1]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 1</span>
-                        <span className="text-subinfo">
-                          {cpuUtilization?.cores[1]}%
-                        </span>
+                        <span className="text-subinfo">{cpuUtilization?.cores[1]}%</span>
                       </div>
                     </div>
                     <div className="gap-2 w-full">
                       <ProgressBar value={cpuUtilization?.cores[3]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 3</span>
-                        <span className="text-subinfo">
-                          {cpuUtilization?.cores[3]}%
-                        </span>
+                        <span className="text-subinfo">{cpuUtilization?.cores[3]}%</span>
                       </div>
                     </div>
                   </div>
@@ -362,12 +355,7 @@ export default function Main() {
         {/* ACCURACY METRICS  */}
         <div className="flex-none flex flex-col">
           <div className="flex justify-end">
-            <Dropdown
-              width="w-40"
-              value={selectedBoard || "-"}
-              options={boards?.map((e) => e.board_name) || ['-']}
-              onChange={(e) => setSelectedBoard(e)}
-            />
+            <Dropdown width="w-40" value={selectedBoard || "-"} options={boards?.map((e) => e.board_name) || ["-"]} onChange={(e) => setSelectedBoard(e)} />
           </div>
 
           <div className="flex flex-col gap-2 mt-4">
@@ -376,18 +364,10 @@ export default function Main() {
                 <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
                   {itemBoard?.slots?.map((card, i) => {
                     return card?.value ? (
-                      <img
-                        key={i}
-                        src={card?.value?.img}
-                        alt="Ground"
-                        className="w-7 h-15 object-contain"
-                      />
+                      <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
                     ) : (
                       /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
-                      <div
-                        key={i}
-                        className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300"
-                      />
+                      <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
                     );
                   })}
                 </div>
@@ -460,22 +440,13 @@ export default function Main() {
                       <p className="text-subinfo">Core Pinning:</p>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <p
-                        className="text-subinfo uppercase"
-                        style={{ fontWeight: "bold" }}
-                      >
+                      <p className="text-subinfo uppercase" style={{ fontWeight: "bold" }}>
                         {cpu?.governor}
                       </p>
-                      <p
-                        className="text-subinfo"
-                        style={{ fontWeight: "bold" }}
-                      >
+                      <p className="text-subinfo" style={{ fontWeight: "bold" }}>
                         {cpu?.thread}
                       </p>
-                      <p
-                        className="text-subinfo"
-                        style={{ fontWeight: "bold" }}
-                      >
+                      <p className="text-subinfo" style={{ fontWeight: "bold" }}>
                         {cpu?.core?.join(", ")}
                       </p>
                     </div>
@@ -487,6 +458,7 @@ export default function Main() {
         </div>
       </div>
       {!!isActionLoading && <ActionLoading />}
+      <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />
     </div>
   );
 }
