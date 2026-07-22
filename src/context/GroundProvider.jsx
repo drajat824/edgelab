@@ -1,12 +1,11 @@
 import { useReducer } from "react";
 import GroundContext from "./GroundContext";
-import { groundReducer, initialState } from "./GroundReducer";
+import { groundReducer } from "./GroundReducer";
 
 export default function groundProvider({ children }) {
 
     const [boards, dispatch] = useReducer(
-        groundReducer,
-        initialState
+        groundReducer
     );
 
     return (

@@ -128,6 +128,46 @@ const apiServices = {
     }
   },
 
+  // GT
+  getGT: async () => {
+    try {
+      return await apiAi.get("/api/gt");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  addGT: async (board_id, board_name, ground_truth) => {
+    try {
+      return await apiAi.post("/api/gt", {
+        board_id: board_id,
+        board_name: board_name,
+        ground_truth: ground_truth,
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateGT: async (board_id, board_name, ground_truth) => {
+    try {
+      return await apiAi.put(`/api/gt/${board_id}`, {
+        board_name: board_name,
+        ground_truth: ground_truth
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteGT: async ({ board_id }) => {
+    try {
+      return await apiAi.delete(`/api/gt/${board_id}`);
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // SESSION
 
   checkStatus: async (token) => {
@@ -149,4 +189,4 @@ const apiServices = {
   },
 };
 
-export default apiServices
+export default apiServices;
