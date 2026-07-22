@@ -97,7 +97,8 @@ export default function Main() {
           }),
         ]);
       } catch (err) {
-        setStreamMode(0);
+        console.log(err)
+        setStreamMode(null);
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -193,7 +194,7 @@ export default function Main() {
           await apiServices.stopVideo();
         }
       } catch (error) {
-        setStreamMode(0);
+        setStreamMode(null);
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -301,7 +302,7 @@ export default function Main() {
                 <img src={Play} alt="Play" className="w-7 h-7 mr-1 inline-block" />
                 <p>Start</p>
               </button>
-              <button style={{ cursor: streamMode === 0 ? "not-allowed" : "pointer" }} disabled={streamMode === 0} className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]" onClick={() => setStreamMode(0)}>
+              <button style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }} disabled={streamMode === 0 || streamMode === null} className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]" onClick={() => setStreamMode(0)}>
                 <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
                 <p>Stop</p>
               </button>
