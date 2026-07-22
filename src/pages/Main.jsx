@@ -47,11 +47,11 @@ export default function Main() {
   // Object Detection Model & Camera Framing
   const [model, setModel] = useState("SSD MobileNet V3 Small");
   const [fps, setFps] = useState(cpu?.fpsCamera);
-  const [streamMode, setStreamMode] = useState(0); // 0: Stop, 1: Start
+  const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
-  const [selectedBoard, setSelectedBoard] = useState(boards ? boards[0]?.board_name : "-");
+  const [selectedBoard, setSelectedBoard] = useState(boards ? boards[0]?.board_name : null);
 
   // ModalAlert
   const [modalConfig, setModalConfig] = useState({
@@ -97,7 +97,7 @@ export default function Main() {
           }),
         ]);
       } catch (err) {
-        console.error("Failed initial hardware data synchronization:", err);
+        setStreamMode(0);
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -193,7 +193,7 @@ export default function Main() {
           await apiServices.stopVideo();
         }
       } catch (error) {
-        console.error("Failed to start/stop video:", error);
+        setStreamMode(0);
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -212,6 +212,7 @@ export default function Main() {
       }
     };
 
+    if (streamMode == null) return;
     handleVideoToggle();
     return () => {
       apiServices.stopVideo();
@@ -234,7 +235,6 @@ export default function Main() {
         });
       }
     } catch (error) {
-      console.error("Failed to update FPS:", error);
       setModalConfig({
         isOpen: true,
         type: "warning",
@@ -355,11 +355,11 @@ export default function Main() {
         {/* ACCURACY METRICS  */}
         <div className="flex-none flex flex-col">
           <div className="flex justify-end">
-            <Dropdown width="w-40" value={selectedBoard || "-"} options={boards?.map((e) => e.board_name) || ["-"]} onChange={(e) => setSelectedBoard(e)} />
+            <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
           </div>
 
           <div className="flex flex-col gap-2 mt-4">
-            {!!selectedBoard && (
+            {selectedBoard ? (
               <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
                 <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
                   {itemBoard?.slots?.map((card, i) => {
@@ -372,7 +372,7 @@ export default function Main() {
                   })}
                 </div>
               </div>
-            )}
+            ): <div />}
 
             <div className="card">
               <p className="text-title">Accuracy Metrics</p>
@@ -457,8 +457,7 @@ export default function Main() {
           </div>
         </div>
       </div>
-      {!!isActionLoading && <ActionLoading />}
-      <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />
+      {!!isActionLoading ? <ActionLoading /> : <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />}
     </div>
   );
 }

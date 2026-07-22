@@ -53,7 +53,7 @@ export default function Dropdown({
       </button>
 
       {/* DROPDOWN */}
-      {open && (
+      {open && options?.length > 0 ? (
         /* 1. Tambahkan class "group" pada container dropdown ini */
         <div className="absolute left-0 mt-2 w-full bg-[var(--white)] border border-[#2a2a3a] rounded-lg overflow-hidden z-50 shadow-lg group">
           {options.map((opt, index) => {
@@ -78,7 +78,7 @@ export default function Dropdown({
             );
           })}
         </div>
-      )}
+      ) : <div/>}
     </div>
   );
 }
