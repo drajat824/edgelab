@@ -10,6 +10,7 @@ import Checkbox from "../components/Checkbox";
 import ScriptReference from "../components/ScriptReference";
 import ScriptEditor from "../components/ScriptEditor";
 import ButtonSave from "../components/ButtonSave";
+import ModalAlert from "../components/ModalAlert";
 
 // 3. Loading & Feedback Indicators
 import Loading from "../components/Loading.jsx";
@@ -51,6 +52,19 @@ export default function Cpu() {
   const [logTunable, setLogTunable] = useState("");
   const [logThreadCore, setLogThreadCore] = useState("");
 
+  // ModalAlert
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "confirm",
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
+  };
+
   // Fetch Baseline Hardware Status on Mount with Smooth Transition Padding
   useEffect(() => {
     setIsInitialLoading(true);
@@ -59,7 +73,6 @@ export default function Cpu() {
 
     Promise.all([
       apiServices.getGovernorStatus().then((data) => {
-        console.log(data);
         dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
         dispatch({
           type: "CHANGE_GOVERNOR_CONFIG",
@@ -81,7 +94,16 @@ export default function Cpu() {
       }),
     ])
       .catch((err) => {
-        console.error("Gagal sinkronisasi dengan hardware Linux:", err);
+        console.error("Failed to sync with Linux hardware:", err);
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Sync Failed",
+          message: err?.response?.data?.detail || err?.message || "Failed to synchronize with Linux hardware.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
       })
       .finally(() => {
         const elapsedTime = Date.now() - startTime;
@@ -117,14 +139,7 @@ export default function Cpu() {
   useEffect(() => {
     if (!cpu) return;
 
-    const governors = [
-      "performance",
-      "conservative",
-      "powersave",
-      "ondemand",
-      "schedutil",
-      "userspace",
-    ];
+    const governors = ["performance", "conservative", "powersave", "ondemand", "schedutil", "userspace"];
     const clone = {};
     governors.forEach((gov) => {
       if (cpu[gov] !== undefined) clone[gov] = structuredClone(cpu[gov]);
@@ -132,14 +147,7 @@ export default function Cpu() {
 
     setTunable(clone);
     setOriginalTunable(clone);
-  }, [
-    cpu?.performance,
-    cpu?.conservative,
-    cpu?.powersave,
-    cpu?.ondemand,
-    cpu?.schedutil,
-    cpu?.userspace,
-  ]);
+  }, [cpu?.performance, cpu?.conservative, cpu?.powersave, cpu?.ondemand, cpu?.schedutil, cpu?.userspace]);
 
   // Core Helper: Check for Modified Configuration Inputs
   function getChangedFields(originalCpu, currentDraft) {
@@ -148,23 +156,12 @@ export default function Cpu() {
       thread: originalCpu?.thread !== currentDraft.thread,
       core: originalCpu?.core !== currentDraft.core,
       freq: {
-        max:
-          String(originalCpu?.maxFreq ?? "") !==
-          String(currentDraft.freq?.max ?? ""),
-        min:
-          String(originalCpu?.minFreq ?? "") !==
-          String(currentDraft.freq?.min ?? ""),
+        max: String(originalCpu?.maxFreq ?? "") !== String(currentDraft.freq?.max ?? ""),
+        min: String(originalCpu?.minFreq ?? "") !== String(currentDraft.freq?.min ?? ""),
       },
     };
 
-    const governors = [
-      "performance",
-      "conservative",
-      "powersave",
-      "ondemand",
-      "schedutil",
-      "userspace",
-    ];
+    const governors = ["performance", "conservative", "powersave", "ondemand", "schedutil", "userspace"];
 
     governors.forEach((govName) => {
       const govConfig = currentDraft[govName];
@@ -172,8 +169,7 @@ export default function Cpu() {
 
       changed[govName] = {};
       Object.keys(govConfig).forEach((field) => {
-        changed[govName][field] =
-          originalCpu?.[govName]?.[field] !== govConfig[field];
+        changed[govName][field] = originalCpu?.[govName]?.[field] !== govConfig[field];
       });
     });
 
@@ -200,24 +196,17 @@ export default function Cpu() {
     return Object.fromEntries(
       Object.entries(status).map(([key, value]) => {
         if (typeof value === "boolean") {
-          const isFreqValid =
-            key !== "freq" || (freq.max !== "" && freq.min !== "");
+          const isFreqValid = key !== "freq" || (freq.max !== "" && freq.min !== "");
           return [key, value && isFreqValid];
         }
 
         const hasChanged = Object.values(value).some(Boolean);
-        const hasEmpty = Object.entries(tunable[key] ?? {}).some(
-          ([fieldKey, fieldValue]) => {
-            if (
-              key === "userspace" &&
-              !tunable.userspace?.isDynamicScripting &&
-              fieldKey === "script"
-            ) {
-              return false;
-            }
-            return fieldValue === "";
-          },
-        );
+        const hasEmpty = Object.entries(tunable[key] ?? {}).some(([fieldKey, fieldValue]) => {
+          if (key === "userspace" && !tunable.userspace?.isDynamicScripting && fieldKey === "script") {
+            return false;
+          }
+          return fieldValue === "";
+        });
 
         return [key, hasChanged && !hasEmpty];
       }),
@@ -225,17 +214,9 @@ export default function Cpu() {
   }, [status, tunable, freq]);
 
   // Abstract Core Driver for Generating Command Logs & Dispatching Changes
-  const handleSaveAction = ({
-    type,
-    payload,
-    customStatus = {},
-    targetDraft = {},
-    logTarget = "tunable",
-  }) => {
+  const handleSaveAction = ({ type, payload, customStatus = {}, targetDraft = {}, logTarget = "tunable" }) => {
     const isCustom = Object.keys(customStatus).length > 0;
-    const finalStatus = isCustom
-      ? customStatus
-      : { [governor]: status[governor] };
+    const finalStatus = isCustom ? customStatus : { [governor]: status[governor] };
 
     const command = generateCommandFunction({
       status: finalStatus,
@@ -276,17 +257,20 @@ export default function Cpu() {
           targetDraft: { freqDraft: freq },
           logTarget: "general",
         });
-        console.log("✓ Frekuensi CPU berhasil diperbarui di hardware Linux.");
-      } else {
-        console.error("Gagal memperbarui frekuensi melalui API:", data?.detail);
       }
     } catch (error) {
-      console.error("Error saat mengeksekusi updateFrequency:", error);
+      console.error("Error executing updateFrequency:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update frequency.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
-      const remainingTime = Math.max(
-        0,
-        ACTION_MIN_DELAY - (Date.now() - startTime),
-      );
+      const remainingTime = Math.max(0, ACTION_MIN_DELAY - (Date.now() - startTime));
       setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
@@ -298,9 +282,7 @@ export default function Cpu() {
     const ACTION_MIN_DELAY = 400;
 
     try {
-      const response = await apiServices.updateGovernorParams(
-        tunable[cpu?.governor],
-      );
+      const response = await apiServices.updateGovernorParams(tunable[cpu?.governor]);
       const data = response?.data || response;
 
       if (data && data.status === "success") {
@@ -322,22 +304,20 @@ export default function Cpu() {
           targetDraft: { tunable },
           logTarget: "tunable",
         });
-        console.log(
-          `✓ Parameter untuk governor ${data.governor.toUpperCase()} berhasil diterapkan.`,
-        );
-      } else {
-        console.error(
-          "Gagal memperbarui parameter governor melalui API:",
-          data?.detail,
-        );
       }
     } catch (error) {
-      console.error("Error saat mengeksekusi updateGovernorParams:", error);
+      console.error("Error executing updateGovernorParams:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update governor parameters.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
-      const remainingTime = Math.max(
-        0,
-        ACTION_MIN_DELAY - (Date.now() - startTime),
-      );
+      const remainingTime = Math.max(0, ACTION_MIN_DELAY - (Date.now() - startTime));
       setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
@@ -368,18 +348,21 @@ export default function Cpu() {
         });
         dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
       } else {
-        console.error(
-          "Gagal memperbarui governor melalui updateGovernor:",
-          data?.detail,
-        );
+        console.error("Gagal memperbarui governor melalui updateGovernor:", data?.detail);
       }
     } catch (error) {
-      console.error("Error saat mengeksekusi updateGovernor:", error);
+      console.error("Error executing updateGovernor:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update governor setting.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
-      const remainingTime = Math.max(
-        0,
-        ACTION_MIN_DELAY - (Date.now() - startTime),
-      );
+      const remainingTime = Math.max(0, ACTION_MIN_DELAY - (Date.now() - startTime));
       setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
@@ -402,22 +385,20 @@ export default function Cpu() {
           targetDraft: { numThread },
           logTarget: "threadCore",
         });
-        console.log(
-          `✓ Alokasi thread berhasil diperbarui menjadi ${data.num_threads}.`,
-        );
-      } else {
-        console.error(
-          "Gagal memperbarui alokasi thread melalui API:",
-          data?.detail,
-        );
       }
     } catch (error) {
-      console.error("Error saat mengeksekusi updateThread:", error);
+      console.error("Error executing updateThread:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update thread configuration.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
-      const remainingTime = Math.max(
-        0,
-        ACTION_MIN_DELAY - (Date.now() - startTime),
-      );
+      const remainingTime = Math.max(0, ACTION_MIN_DELAY - (Date.now() - startTime));
       setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
@@ -440,22 +421,20 @@ export default function Cpu() {
           targetDraft: { cores: cores },
           logTarget: "threadCore",
         });
-        console.log(
-          `✓ Core pinning berhasil diterapkan pada core: [${data.cores.join(", ")}].`,
-        );
-      } else {
-        console.error(
-          "Gagal memperbarui core pinning melalui API:",
-          data?.detail,
-        );
       }
     } catch (error) {
-      console.error("Error saat mengeksekusi updateCores:", error);
+      console.error("Error executing updateCores:", error);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Update Failed",
+        message: error?.response?.data?.detail || error?.message || "Failed to update CPU cores.",
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
     } finally {
-      const remainingTime = Math.max(
-        0,
-        ACTION_MIN_DELAY - (Date.now() - startTime),
-      );
+      const remainingTime = Math.max(0, ACTION_MIN_DELAY - (Date.now() - startTime));
       setTimeout(() => setIsActionLoading(false), remainingTime);
     }
   };
@@ -466,12 +445,7 @@ export default function Cpu() {
 
     setTunable((prev) => {
       const value = prev?.userspace?.fixedFrequency;
-      const newFreq =
-        value < cpu?.minFreq
-          ? cpu?.minFreq
-          : value > cpu?.maxFreq
-            ? cpu?.maxFreq
-            : value;
+      const newFreq = value < cpu?.minFreq ? cpu?.minFreq : value > cpu?.maxFreq ? cpu?.maxFreq : value;
       if (newFreq === value) return prev;
       isAutoAdjusting.current = true;
 
@@ -496,13 +470,9 @@ export default function Cpu() {
       <div className="parent h-full">
         <h1 className="text-xtitle">
           DVFS
-          <span className="font-normal text-gray-500 ml-1">
-            (Dynamic Voltage and Frequency Scaling)
-          </span>
+          <span className="font-normal text-gray-500 ml-1">(Dynamic Voltage and Frequency Scaling)</span>
         </h1>
-        <p className="text-subinfo mt-2 text-gray-500">
-          Manage CPU performance by adjusting voltage and frequency dynamically.
-        </p>
+        <p className="text-subinfo mt-2 text-gray-500">Manage CPU performance by adjusting voltage and frequency dynamically.</p>
         <Skeleton />
       </div>
     );
@@ -511,13 +481,9 @@ export default function Cpu() {
     <div className="parent h-full">
       <h1 className="text-xtitle">
         DVFS
-        <span className="font-normal text-gray-500 ml-1">
-          (Dynamic Voltage and Frequency Scaling)
-        </span>
+        <span className="font-normal text-gray-500 ml-1">(Dynamic Voltage and Frequency Scaling)</span>
       </h1>
-      <p className="text-subinfo mt-2 text-gray-500">
-        Manage CPU performance by adjusting voltage and frequency dynamically.
-      </p>
+      <p className="text-subinfo mt-2 text-gray-500">Manage CPU performance by adjusting voltage and frequency dynamically.</p>
 
       <div className="flex flex-col lg:flex-row">
         <div className="flex-none flex items-center py-4 gap-12">
@@ -528,14 +494,7 @@ export default function Cpu() {
             onChange={(e) => {
               (setLogTunable(""), setGovernor(e));
             }}
-            options={[
-              "performance",
-              "powersave",
-              "ondemand",
-              "conservative",
-              "schedutil",
-              "userspace",
-            ]}
+            options={["performance", "powersave", "ondemand", "conservative", "schedutil", "userspace"]}
             width="w-48"
             actived={status?.governor}
           />
@@ -557,9 +516,7 @@ export default function Cpu() {
           {/* Governor Info  */}
           <div className="rounded-md px-2 py-2">
             <p className="text-sm text-black-500">Governor Mode Active</p>
-            <p className="text-xl font-semibold text-green-700 uppercase">
-              {cpu?.governor}
-            </p>
+            <p className="text-xl font-semibold text-green-700 uppercase">{cpu?.governor}</p>
           </div>
         </div>
       </div>
@@ -592,10 +549,7 @@ export default function Cpu() {
                 unit="GHz"
               />
               <div>
-                <p className="text-warning">
-                  *Minimum frequency must be less than or equal to maximum
-                  frequency.
-                </p>
+                <p className="text-warning">*Minimum frequency must be less than or equal to maximum frequency.</p>
               </div>
             </div>
           </div>
@@ -621,18 +575,13 @@ export default function Cpu() {
                 unit="GHz"
               />
               <div>
-                <p className="text-warning">
-                  *Available Maximum Frequency: 0.6 - 1.8 GHz
-                </p>
+                <p className="text-warning">*Available Maximum Frequency: 0.6 - 1.8 GHz</p>
               </div>
             </div>
           </div>
 
           {/* Button  */}
-          <ButtonSave
-            disabled={!disabledButton?.freq}
-            onClick={onSaveFrequency}
-          />
+          <ButtonSave disabled={!disabledButton?.freq} onClick={onSaveFrequency} />
         </div>
       </div>
 
@@ -649,10 +598,7 @@ export default function Cpu() {
           <p className="text-info" style={{ fontWeight: "bold" }}>
             Performance <span className="text-info">Tunable Parameters</span>
           </p>
-          <p className="text-info">
-            The CPU remains locked at the maximum frequency, delivering peak
-            performance but resulting in increased power consumption.
-          </p>
+          <p className="text-info">The CPU remains locked at the maximum frequency, delivering peak performance but resulting in increased power consumption.</p>
         </div>
       )}
 
@@ -663,10 +609,7 @@ export default function Cpu() {
           <p className="text-info" style={{ fontWeight: "bold" }}>
             Powersave <span className="text-info">Tunable Parameters</span>
           </p>
-          <p className="text-info">
-            The CPU remains locked at the minimum frequency, reducing power
-            consumption at the cost of lower performance.
-          </p>
+          <p className="text-info">The CPU remains locked at the minimum frequency, reducing power consumption at the cost of lower performance.</p>
         </div>
       )}
 
@@ -890,12 +833,7 @@ export default function Cpu() {
               </div>
             </div>
 
-            <ButtonSave
-              disabled={
-                cpu?.governor != "ondemand" || !disabledButton?.ondemand
-              }
-              onClick={onSaveTunnable}
-            />
+            <ButtonSave disabled={cpu?.governor != "ondemand" || !disabledButton?.ondemand} onClick={onSaveTunnable} />
           </div>
         </div>
       )}
@@ -976,8 +914,7 @@ export default function Cpu() {
                   onBlur={() => {
                     setTunable((prev) => {
                       let value = Number(prev.conservative.samplingDownFactor);
-                      if (prev.conservative.samplingDownFactor === "")
-                        return prev;
+                      if (prev.conservative.samplingDownFactor === "") return prev;
                       value = Math.min(10, Math.max(1, value));
                       return {
                         ...prev,
@@ -990,9 +927,7 @@ export default function Cpu() {
                   }}
                   placeholder="Input samping rate"
                 />
-                <p className="text-warning">
-                  *Available sampling down factor: 1- 10
-                </p>
+                <p className="text-warning">*Available sampling down factor: 1- 10</p>
               </div>
             </div>
 
@@ -1022,12 +957,7 @@ export default function Cpu() {
                       }
                       onBlur={() => {
                         setTunable((prev) => {
-                          let value = Number(
-                            prev.conservative.thresholdUp <=
-                              prev.conservative.thresholdDown
-                              ? Math.max(1, prev.conservative.thresholdDown + 1)
-                              : prev.conservative.thresholdUp,
-                          );
+                          let value = Number(prev.conservative.thresholdUp <= prev.conservative.thresholdDown ? Math.max(1, prev.conservative.thresholdDown + 1) : prev.conservative.thresholdUp);
                           if (prev.conservative.thresholdUp === "") return prev;
                           value = Math.min(100, Math.max(1, value));
                           return {
@@ -1042,9 +972,7 @@ export default function Cpu() {
                       placeholder="Up Threshold"
                       unit="%"
                     />
-                    <p className="text-warning">
-                      *Must be between 1 - 100% and greater than Threshold Down
-                    </p>
+                    <p className="text-warning">*Must be between 1 - 100% and greater than Threshold Down</p>
                   </div>
                 </div>
 
@@ -1068,15 +996,9 @@ export default function Cpu() {
                       }
                       onBlur={() => {
                         setTunable((prev) => {
-                          let value = Number(
-                            prev.conservative.thresholdDown >=
-                              prev.conservative.thresholdUp
-                              ? Math.max(1, prev.conservative.thresholdUp - 1)
-                              : prev.conservative.thresholdDown,
-                          );
+                          let value = Number(prev.conservative.thresholdDown >= prev.conservative.thresholdUp ? Math.max(1, prev.conservative.thresholdUp - 1) : prev.conservative.thresholdDown);
 
-                          if (prev.conservative.thresholdDown === "")
-                            return prev;
+                          if (prev.conservative.thresholdDown === "") return prev;
                           value = Math.min(100, Math.max(1, value));
                           return {
                             ...prev,
@@ -1090,9 +1012,7 @@ export default function Cpu() {
                       placeholder="Down Threshold"
                       unit="%"
                     />
-                    <p className="text-warning">
-                      *Must be between 1 - 100% and less than Threshold Up
-                    </p>
+                    <p className="text-warning">*Must be between 1 - 100% and less than Threshold Up</p>
                   </div>
                 </div>
               </div>
@@ -1156,8 +1076,7 @@ export default function Cpu() {
                         ...prev,
                         conservative: {
                           ...prev.conservative,
-                          isIgnoreNice:
-                            !prev?.conservative?.isIgnoreNice ?? true,
+                          isIgnoreNice: !prev?.conservative?.isIgnoreNice ?? true,
                         },
                       }))
                     }
@@ -1166,12 +1085,7 @@ export default function Cpu() {
               </div>
             </div>
 
-            <ButtonSave
-              disabled={
-                cpu?.governor != "conservative" || !disabledButton?.conservative
-              }
-              onClick={onSaveTunnable}
-            />
+            <ButtonSave disabled={cpu?.governor != "conservative" || !disabledButton?.conservative} onClick={onSaveTunnable} />
           </div>
         </div>
       )}
@@ -1211,12 +1125,7 @@ export default function Cpu() {
               </div>
             </div>
 
-            <ButtonSave
-              disabled={
-                cpu?.governor != "schedutil" || !disabledButton?.schedutil
-              }
-              onClick={onSaveTunnable}
-            />
+            <ButtonSave disabled={cpu?.governor != "schedutil" || !disabledButton?.schedutil} onClick={onSaveTunnable} />
           </div>
         </div>
       )}
@@ -1246,18 +1155,13 @@ export default function Cpu() {
                       userspace: { ...prev.userspace, fixedFrequency: e },
                     }))
                   }
-                  options={freqRange.filter(
-                    (opt) => opt >= freq.min && opt <= freq.max,
-                  )}
+                  options={freqRange.filter((opt) => opt >= freq.min && opt <= freq.max)}
                   width="w-full"
                   disabled={cpu?.governor != "userspace"}
                   capslock={false}
                   unit="GHz"
                 />
-                <p className="text-warning">
-                  *Fixed frequency must stay within the specified range (min -
-                  max frequency).
-                </p>
+                <p className="text-warning">*Fixed frequency must stay within the specified range (min - max frequency).</p>
               </div>
             </div>
 
@@ -1271,8 +1175,7 @@ export default function Cpu() {
                       ...prev,
                       userspace: {
                         ...prev.userspace,
-                        isDynamicScripting:
-                          !prev?.userspace?.isDynamicScripting ?? true,
+                        isDynamicScripting: !prev?.userspace?.isDynamicScripting ?? true,
                       },
                     }))
                   }
@@ -1283,10 +1186,7 @@ export default function Cpu() {
               <div className="flex flex-col lg:flex-row gap-4 pt-4">
                 <div className="flex-1">
                   <ScriptEditor
-                    disabled={
-                      !tunable?.userspace?.isDynamicScripting ||
-                      cpu?.governor != "userspace"
-                    }
+                    disabled={!tunable?.userspace?.isDynamicScripting || cpu?.governor != "userspace"}
                     value={script}
                     onChange={setScript}
                     isDirty={script !== tunable?.userspace?.script}
@@ -1307,30 +1207,20 @@ export default function Cpu() {
               </div>
             </div>
 
-            <ButtonSave
-              disabled={
-                cpu?.governor != "userspace" || !disabledButton?.userspace
-              }
-              onClick={onSaveTunnable}
-            />
+            <ButtonSave disabled={cpu?.governor != "userspace" || !disabledButton?.userspace} onClick={onSaveTunnable} />
           </div>
         </div>
       )}
 
       {/* Log  */}
-      {governor != "performance" && governor != "powersave" && (
-        <Log value={logTunable} />
-      )}
+      {governor != "performance" && governor != "powersave" && <Log value={logTunable} />}
 
       {/* Thread & Core  */}
       <div className="pt-8">
         {/* Title  */}
         <h1 className="text-xtitle">Thread Allocation & Core Pinning</h1>
 
-        <p className="text-subinfo mt-2 text-gray-500">
-          Optimize performance by assigning processes to specific CPU cores and
-          managing thread distribution.
-        </p>
+        <p className="text-subinfo mt-2 text-gray-500">Optimize performance by assigning processes to specific CPU cores and managing thread distribution.</p>
 
         {/* Card  */}
         <div className="flex flex-col lg:flex-row pt-4 justify-between gap-4 h-full">
@@ -1358,10 +1248,7 @@ export default function Cpu() {
                 />
               </div>
               <p className="text-warning">*Available Maximum Thread: 4</p>
-              <ButtonSave
-                disabled={cpu?.thread === numThread || numThread == ""}
-                onClick={onSaveThread}
-              />
+              <ButtonSave disabled={cpu?.thread === numThread || numThread == ""} onClick={onSaveThread} />
             </div>
           </div>
 
@@ -1387,10 +1274,7 @@ export default function Cpu() {
                   ]}
                 />
               </div>
-              <ButtonSave
-                disabled={cpu?.core === cores || cores?.length == 0}
-                onClick={onSaveCore}
-              />
+              <ButtonSave disabled={cpu?.core === cores || cores?.length == 0} onClick={onSaveCore} />
             </div>
           </div>
         </div>
@@ -1398,6 +1282,7 @@ export default function Cpu() {
         <Log value={logThreadCore} />
       </div>
       {!!isActionLoading && <ActionLoading />}
+      <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />
     </div>
   );
 }
