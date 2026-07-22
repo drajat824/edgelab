@@ -50,7 +50,7 @@ export default function Main() {
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
-  const [selectedBoard, setSelectedBoard] = useState(boards[0]?.board_name);
+  const [selectedBoard, setSelectedBoard] = useState(boards? boards[0]?.board_name : '-');
 
   // Fetch Hardware State & Stream Status on Page Mount
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function Main() {
   // Match Selected Evaluation Board with Local Reference JSON Data
   useEffect(() => {
     if (!boards || !selectedBoard) return;
-    const targetBoard = boards.find((e) => e.board_name === selectedBoard);
+    const targetBoard = boards?.find((e) => e.board_name === selectedBoard);
 
     if (targetBoard) {
       const transformedBoard = {
@@ -365,7 +365,7 @@ export default function Main() {
             <Dropdown
               width="w-40"
               value={selectedBoard || "-"}
-              options={boards?.map((e) => e.board_name)}
+              options={boards?.map((e) => e.board_name) || ['-']}
               onChange={(e) => setSelectedBoard(e)}
             />
           </div>
