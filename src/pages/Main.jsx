@@ -25,7 +25,7 @@ import CARDS from "../components/Cards";
 export default function Main() {
   // Custom Hooks Configuration Context
   const { cpu, dispatch } = useCPU();
-  const { boards } = useGround();
+  const { boards, dispatch: dispatchGround } = useGround(); // Context untuk Ground Truth / Boards
 
   // Static API Endpoints
   const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
@@ -33,6 +33,9 @@ export default function Main() {
   // Global Page Loading States
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Display State Local untuk Boards
+  const [displayBoards, setDisplayBoards] = useState([]);
 
   // Real-time CPU Performance Metrics
   const [cpuUtilization, setCpuUtilization] = useState({
@@ -61,7 +64,7 @@ export default function Main() {
   const forwardPassBufferRef = useRef([]);
   const lastUpdateRef = useRef(0);
 
-  // Ref
+  // Ref Recording & Samples State
   const isRecordingRef = useRef(isRecording);
   const targetSamplesRef = useRef(targetSamples);
 
@@ -73,21 +76,10 @@ export default function Main() {
     targetSamplesRef.current = targetSamples;
   }, [targetSamples]);
 
-  // Heeelper Average
-  const getAverage = (buffer, newValue, maxWindow) => {
-    buffer.push(newValue);
-    if (buffer.length > maxWindow) {
-      buffer.shift();
-    }
-    const sum = buffer.reduce((acc, curr) => acc + curr, 0);
-    return Number((sum / buffer.length).toFixed(2));
-  };
-
   // Clear/Reset Data Average
   const handleClear = () => {
     fpsBufferRef.current = [];
     forwardPassBufferRef.current = [];
-    // setIsRecording(false);
     setAvgProgress(0);
     setInferenceFps((prev) => ({ ...prev, avg: 0 }));
     setForwardPass((prev) => ({ ...prev, avg: 0 }));
@@ -95,7 +87,7 @@ export default function Main() {
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
-  const [selectedBoard, setSelectedBoard] = useState(boards ? boards[0]?.board_name : null);
+  const [selectedBoard, setSelectedBoard] = useState(null);
 
   // ModalAlert
   const [modalConfig, setModalConfig] = useState({
@@ -110,58 +102,90 @@ export default function Main() {
     setModalConfig((prev) => ({ ...prev, isOpen: false }));
   };
 
-  // Fetch Hardware State & Stream Status on Page Mount
+  // Helper Minimum Delay
+  const withMinimumDelay = async (action, delayMs = 500) => {
+    const startTime = Date.now();
+    await action();
+    const elapsedTime = Date.now() - startTime;
+    const remainingTime = Math.max(0, delayMs - elapsedTime);
+    if (remainingTime > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
+    }
+  };
+
+  // 1. Function Fetch Boards (Ground Truth)
+  const fetchBoards = async () => {
+    try {
+      const response = await apiServices.getGT();
+      if (response?.data) {
+        // Sync State Global
+        dispatchGround({ type: "SET_BOARDS", payload: response.data });
+
+        // Sync State Lokal (Jika menggunakan fungsi transform data)
+        if (typeof transformBoardsData === "function") {
+          const transformed = transformBoardsData(response.data);
+          setDisplayBoards(transformed);
+        }
+
+        // Auto select board pertama jika belum ada yang terpilih
+        if (response.data.length > 0 && !selectedBoard) {
+          setSelectedBoard(response.data[0]?.board_name);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch boards:", error);
+      throw new Error(error?.response?.data?.detail || error?.message || "Failed to retrieve board data.");
+    }
+  };
+
+  // 2. Main Initial Load (Combine Hardware Data + Boards GT Data)
   useEffect(() => {
     setIsInitialLoading(true);
 
     const fetchInitialData = async () => {
-      const startTime = Date.now();
-      const MINIMUM_DELAY = 500; // Minimal display loading padding (0.5 detik)
+      await withMinimumDelay(async () => {
+        try {
+          await Promise.all([
+            // Sync Hardware Configurations
+            apiServices.getGovernorStatus().then((data) => {
+              dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
+            }),
+            apiServices.getThread().then((data) => {
+              dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.num_threads });
+            }),
+            apiServices.getCores().then((data) => {
+              dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
+            }),
+            apiServices.getFps().then((data) => {
+              dispatch({ type: "CHANGE_FPS_CONFIG", payload: data?.fps_camera });
+            }),
+            apiServices.stopVideo().then((data) => {
+              if (data?.stream_status === "start") setStreamMode(1);
+              if (data?.stream_status === "stop") {
+                setStreamMode(0);
+                setIsRecording(false);
+              }
+            }),
+            // Sync Boards GT Data
+            fetchBoards(),
+          ]);
+        } catch (err) {
+          console.error("Initial Sync Error:", err);
+          setStreamMode(null);
+          setIsRecording(false);
+          setModalConfig({
+            isOpen: true,
+            type: "warning",
+            title: "Sync Failed",
+            message: err?.message || "Failed to synchronize initial hardware or board data.",
+            confirmText: "OK",
+            cancelText: "",
+            onConfirm: closeModal,
+          });
+        }
+      }, 500);
 
-      try {
-        await Promise.all([
-          apiServices.getGovernorStatus().then((data) => {
-            dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
-          }),
-          apiServices.getThread().then((data) => {
-            dispatch({
-              type: "CHANGE_THREAD_CONFIG",
-              payload: data?.num_threads,
-            });
-          }),
-          apiServices.getCores().then((data) => {
-            dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
-          }),
-          apiServices.getFps().then((data) => {
-            dispatch({ type: "CHANGE_FPS_CONFIG", payload: data?.fps_camera });
-          }),
-          apiServices.stopVideo().then((data) => {
-            if (data?.stream_status === "start") setStreamMode(1);
-            if (data?.stream_status === "stop") {
-              (setStreamMode(0), setIsRecording(false));
-            }
-          }),
-        ]);
-      } catch (err) {
-        console.log(err);
-        setStreamMode(null);
-        setIsRecording(false);
-        setModalConfig({
-          isOpen: true,
-          type: "warning",
-          title: "Sync Failed",
-          message: err?.response?.data?.detail || err?.message || "Failed to synchronize initial hardware data.",
-          confirmText: "OK",
-          cancelText: "",
-          onConfirm: closeModal,
-        });
-      } finally {
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
-        setTimeout(() => {
-          setIsInitialLoading(false);
-        }, remainingTime);
-      }
+      setIsInitialLoading(false);
     };
 
     fetchInitialData();
@@ -226,31 +250,28 @@ export default function Main() {
         const rawFps = Number(data?.inference_fps) || 0;
         const rawForwardPass = Number(data?.forward_pass_ms) || 0;
 
-        // 1. ISI BUFFER DENGAN SLIDING WINDOW (Gunakan Shift jika penuh)
+        // 1. ISI BUFFER DENGAN SLIDING WINDOW
         if (isRecordingRef.current) {
           const maxSamples = targetSamplesRef.current;
 
-          // Tambahkan data baru
           fpsBufferRef.current.push(rawFps);
           forwardPassBufferRef.current.push(rawForwardPass);
 
-          // Jika jumlah data melebihi maxSamples, BUANG data paling lama (Sliding)
           if (fpsBufferRef.current.length > maxSamples) {
             fpsBufferRef.current.shift();
             forwardPassBufferRef.current.shift();
           }
         }
 
-        // 2. THROTTLE UPDATE UI
+        // 2. THROTTLE UPDATE UI (Set ke 300ms)
         const now = Date.now();
-        if (now - lastUpdateRef.current >= 100) {
+        if (now - lastUpdateRef.current >= 300) {
           lastUpdateRef.current = now;
 
           const currentCount = fpsBufferRef.current.length;
           const maxSamples = targetSamplesRef.current;
           const calculatedProgress = maxSamples > 0 ? Math.min(Math.round((currentCount / maxSamples) * 100), 100) : 0;
 
-          // Hitung rata-rata dari N data TERAKHIR yang ada di buffer
           const avgFps = currentCount > 0 ? Number((fpsBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
           const avgForwardPass = currentCount > 0 ? Number((forwardPassBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
 
@@ -266,7 +287,6 @@ export default function Main() {
               avg: avgForwardPass,
             });
           } else {
-            // Jika Pause, pertahankan nilai avg terakhir
             setInferenceFps((prev) => ({ ...prev, realtime: Number(rawFps.toFixed(2)) }));
             setForwardPass((prev) => ({ ...prev, realtime: Number(rawForwardPass.toFixed(2)) }));
           }
@@ -286,34 +306,28 @@ export default function Main() {
   useEffect(() => {
     const handleVideoToggle = async () => {
       setIsActionLoading(true);
-      const startTime = Date.now();
-      const MINIMUM_DELAY = 400;
-
-      try {
-        if (streamMode) {
-          await apiServices.startVideo();
-        } else {
-          await apiServices.stopVideo();
+      await withMinimumDelay(async () => {
+        try {
+          if (streamMode) {
+            await apiServices.startVideo();
+          } else {
+            await apiServices.stopVideo();
+          }
+        } catch (error) {
+          setIsRecording(false);
+          setStreamMode(null);
+          setModalConfig({
+            isOpen: true,
+            type: "warning",
+            title: "Video Control Failed",
+            message: error?.response?.data?.detail || error?.message || "Failed to start or stop the video.",
+            confirmText: "OK",
+            cancelText: "",
+            onConfirm: closeModal,
+          });
         }
-      } catch (error) {
-        setIsRecording(false);
-        setStreamMode(null);
-        setModalConfig({
-          isOpen: true,
-          type: "warning",
-          title: "Video Control Failed",
-          message: error?.response?.data?.detail || error?.message || "Failed to start or stop the video.",
-          confirmText: "OK",
-          cancelText: "",
-          onConfirm: closeModal,
-        });
-      } finally {
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
-        setTimeout(() => {
-          setIsActionLoading(false);
-        }, remainingTime);
-      }
+      }, 400);
+      setIsActionLoading(false);
     };
 
     if (streamMode == null) return;
@@ -327,35 +341,30 @@ export default function Main() {
   const onChangeFPS = async (e) => {
     if (e === cameraFps) return;
     setIsActionLoading(true);
-    const startTime = Date.now();
-    const MINIMUM_DELAY = 400;
 
-    try {
-      const response = await apiServices.updateFps({ cameraFps: e });
-      console.log(response);
-      if (response?.status === "success") {
-        dispatch({
-          type: "CHANGE_FPS_CONFIG",
-          payload: e,
+    await withMinimumDelay(async () => {
+      try {
+        const response = await apiServices.updateFps({ cameraFps: e });
+        if (response?.status === "success") {
+          dispatch({
+            type: "CHANGE_FPS_CONFIG",
+            payload: e,
+          });
+        }
+      } catch (error) {
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Update Failed",
+          message: error?.response?.data?.detail || error?.message || "Failed to update FPS settings.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
         });
       }
-    } catch (error) {
-      setModalConfig({
-        isOpen: true,
-        type: "warning",
-        title: "Update Failed",
-        message: error?.response?.data?.detail || error?.message || "Failed to update FPS settings.",
-        confirmText: "OK",
-        cancelText: "",
-        onConfirm: closeModal,
-      });
-    } finally {
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, MINIMUM_DELAY - elapsedTime);
-      setTimeout(() => {
-        setIsActionLoading(false);
-      }, remainingTime);
-    }
+    }, 400);
+
+    setIsActionLoading(false);
   };
 
   if (!!isInitialLoading)
