@@ -263,9 +263,9 @@ export default function Main() {
           }
         }
 
-        // 2. THROTTLE UPDATE UI (Set ke 300ms)
+        // 2. THROTTLE UPDATE UI
         const now = Date.now();
-        if (now - lastUpdateRef.current >= 300) {
+        if (now - lastUpdateRef.current >= 200) {
           lastUpdateRef.current = now;
 
           const currentCount = fpsBufferRef.current.length;
