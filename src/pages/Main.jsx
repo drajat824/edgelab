@@ -145,7 +145,7 @@ export default function Main() {
       } catch (err) {
         console.log(err);
         setStreamMode(null);
-        setIsRecording(false)
+        setIsRecording(false);
         setModalConfig({
           isOpen: true,
           type: "warning",
@@ -243,13 +243,11 @@ export default function Main() {
 
         // 2. THROTTLE UPDATE UI
         const now = Date.now();
-        if (now - lastUpdateRef.current >= 300) {
+        if (now - lastUpdateRef.current >= 100) {
           lastUpdateRef.current = now;
 
           const currentCount = fpsBufferRef.current.length;
           const maxSamples = targetSamplesRef.current;
-
-          // Hitung progress ketercukupan sampel (mentok di 100%)
           const calculatedProgress = maxSamples > 0 ? Math.min(Math.round((currentCount / maxSamples) * 100), 100) : 0;
 
           // Hitung rata-rata dari N data TERAKHIR yang ada di buffer
@@ -298,7 +296,7 @@ export default function Main() {
           await apiServices.stopVideo();
         }
       } catch (error) {
-        setIsRecording(false)
+        setIsRecording(false);
         setStreamMode(null);
         setModalConfig({
           isOpen: true,
@@ -506,7 +504,7 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Real-time Data</p>
+              <p className="text-title">Instantaneous Performance</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Forward-pass:</p>
@@ -517,33 +515,34 @@ export default function Main() {
                   <p className="text-info">{inferenceFps?.realtime} ms</p>
                 </div>
               </div>
-            </div>
-            <div className="card">
-              <div className="flex items-center gap-2">
-                <p className="text-title">Average </p>
-                <TextInput disabled={isRecording} width="w-15" type="number" min="1" max="1000" value={targetSamples} onChange={(e) => setTargetSamples(Math.max(1, Number(e.target.value)))} className="text-center" />
-                <p className="text-title">Data</p>
-              </div>
-              <div className="flex mt-2 gap-5">
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">Forward-pass:</p>
-                  <p className="text-info">Inference FPS:</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">{forwardPass.avg} ms</p>
-                  <p className="text-info">{inferenceFps?.avg} ms</p>
-                </div>
-              </div>
-              <div className="mt-2 flex flex-col gap-2">
-                <span>Sample Completeness: {avgProgress}%</span>
-                <ProgressBar value={avgProgress} type="avg" />
+
+              <div className="flex flex-col gap-3 p-4 text-sm bg-blue-50 border border-blue-200 rounded-lg shadow-xs mt-2">
                 <div className="flex items-center gap-2">
-                  <button disabled={streamMode == 0 || streamMode == null} onClick={() => setIsRecording(!isRecording)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:hover:bg-gray-300 ${isRecording ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
-                    {isRecording ? "Pause" : "Count"}
-                  </button>
-                  <button disabled={streamMode == 0 || streamMode == null} type="button" onClick={handleClear} className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100">
-                    Clear
-                  </button>
+                  <p className="text-info">Average: </p>
+                  <input type="number" min="1" max="1000" disabled={isRecording} value={targetSamples} onChange={(e) => setTargetSamples(Math.max(1, Number(e.target.value)))} className="w-full h-fit px-2 py-1 text-info font-medium text-gray-800 bg-white border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
+                  <p className="text-info">Data</p>
+                </div>
+                <div className="flex mt-2 gap-5">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-info">Forward-pass:</p>
+                    <p className="text-info">Inference FPS:</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-info">{forwardPass.avg} ms</p>
+                    <p className="text-info">{inferenceFps?.avg} ms</p>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-col gap-2">
+                  <span>Sample Completeness: {avgProgress}%</span>
+                  <ProgressBar value={avgProgress} type="avg" />
+                  <div className="flex items-center text-center gap-2">
+                    <button disabled={streamMode == 0 || streamMode == null} onClick={() => setIsRecording(!isRecording)} className={`w-full px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:hover:bg-gray-300 ${isRecording ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
+                      <span>{isRecording ? "Pause" : "Count"}</span>
+                    </button>
+                    <button disabled={streamMode == 0 || streamMode == null} type="button" onClick={handleClear} className="w-full px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100">
+                      Clear
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
