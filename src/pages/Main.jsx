@@ -53,6 +53,7 @@ export default function Main() {
   const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
   const [inferenceFps, setInferenceFps] = useState({ realtime: 0, avg: 0 });
   const [forwardPass, setForwardPass] = useState({ realtime: 0, avg: 0 });
+  const [cameraError, setCameraError] = useState("");
 
   // Kontrol Average
   const [isRecording, setIsRecording] = useState(false);
@@ -250,6 +251,10 @@ export default function Main() {
         const rawFps = Number(data?.inference_fps) || 0;
         const rawForwardPass = Number(data?.forward_pass_ms) || 0;
 
+        if (data?.camera_error !== null) {
+          setCameraError(data?.camera_error);
+        }
+
         // 1. ISI BUFFER DENGAN SLIDING WINDOW
         if (isRecordingRef.current) {
           const maxSamples = targetSamplesRef.current;
@@ -301,6 +306,22 @@ export default function Main() {
       ws.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (cameraError != "") {
+      setStreamMode(null);
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Camera Failed",
+        message: cameraError,
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
+      setCameraError("");
+    }
+  }, [cameraError]);
 
   // Handle Toggle Pipeline For Video Capture Frames Streaming
   useEffect(() => {
@@ -398,9 +419,13 @@ export default function Main() {
             {/* Streaming Camera */}
             <div className="card-stream w-full h-fit flex items-center justify-center">
               {streamMode ? (
-                <img src={videoUrl} alt="Live Video Feed" className="w-full h-full object-contain rounded-lg" />
+                <img
+                  src={videoUrl}
+                  alt="Live Video Feed"
+                  className="w-full min-h-[365px] object-contain bg-black rounded-lg"
+                />
               ) : (
-                <div className="h-[376.5px] w-full object-contain bg-black rounded-lg flex items-center justify-center">
+                <div className="min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center">
                   <p className="text-white text-4xl text-center">
                     DETECTION <br />
                     STOPPED
