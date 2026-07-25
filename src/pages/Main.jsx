@@ -148,8 +148,14 @@ export default function Main() {
         try {
           await Promise.all([
             // Sync Hardware Configurations
-            apiServices.getGovernorStatus().then((data) => {
+            apiServices.getGovernorStatus().then(async (data) => {
+              console.log(data)
               dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
+              if (data?.governor === "userspace" && data?.tunables?.isDynamicScripting) {
+                await apiServices.startDynamicScripting();
+              } else {
+                await apiServices.stopDynamicScripting();
+              }
             }),
             apiServices.getThread().then((data) => {
               dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.num_threads });
@@ -190,6 +196,11 @@ export default function Main() {
     };
 
     fetchInitialData();
+    return () => {
+      apiServices.stopDynamicScripting().catch((err) => {
+        console.error("Cleanup Stop:", err);
+      });
+    };
   }, [dispatch]);
 
   // Keep Sync Camera FPS inside Local Draft State with CPU Context Updates
@@ -538,7 +549,7 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Instantaneous Performance</p>
+              <p className="text-title">Instance Performance</p>
               <div className="flex mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Forward-pass:</p>

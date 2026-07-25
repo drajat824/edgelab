@@ -73,6 +73,10 @@ export default function Cpu() {
 
     Promise.all([
       apiServices.getGovernorStatus().then((data) => {
+        if (data?.governor == "userspace" && data?.tunables?.script != "") {
+          setScript(data?.tunables?.script);
+        }
+
         dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
         dispatch({
           type: "CHANGE_GOVERNOR_CONFIG",
@@ -1184,7 +1188,7 @@ export default function Cpu() {
               </div>
 
               <div className="flex flex-col lg:flex-row gap-4 pt-4">
-                <div className="flex-1">
+                <div className="flex-3/4">
                   <ScriptEditor
                     disabled={!tunable?.userspace?.isDynamicScripting || cpu?.governor != "userspace"}
                     value={script}
@@ -1201,7 +1205,7 @@ export default function Cpu() {
                     }}
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-auto">
                   <ScriptReference />
                 </div>
               </div>

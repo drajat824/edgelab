@@ -36,6 +36,7 @@ export const initialState = {
     isDynamicScripting: false,
     script: "",
   },
+
 };
 
 export function cpuReducer(state, action) {
@@ -43,8 +44,7 @@ export function cpuReducer(state, action) {
     case "CHANGE_GOVERNOR_CONFIG":
       return {
         ...state,
-        [action.payload.governor]:
-          action.payload.config[action.payload.governor],
+        [action.payload.governor]: action.payload.config[action.payload.governor],
       };
 
     case "CHANGE_GOVERNOR":

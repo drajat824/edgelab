@@ -144,19 +144,21 @@ export default function ScriptEditor({
                             }
                         }}
                         className="
-                        flex-1
-                        resize-none
-                        bg-slate-900
-                        text-slate-100
-                        px-4
-                        py-4
-                        leading-7
-                        outline-none
-                        caret-cyan-400
-                        placeholder:text-slate-500
-                        disabled:cursor-not-allowed
-                        overflow-y-auto
-                    "
+                            flex-1
+                            resize-none
+                            bg-slate-900
+                            text-slate-100
+                            px-4
+                            py-4
+                            leading-7
+                            outline-none
+                            caret-cyan-400
+                            placeholder:text-slate-500
+                            disabled:cursor-not-allowed
+                            overflow-y-auto
+                            overflow-x-auto
+                            whitespace-pre
+                        "
                     />
                 </div>
 

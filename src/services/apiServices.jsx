@@ -33,11 +33,30 @@ const apiServices = {
 
   // POST - GANTI PARAMETER GOVERNOR
   updateGovernorParams: async (paramsData) => {
-    console.log(paramsData, "PARAMSDATA");
     try {
       return await api.post("/api/cpu/governor/params", paramsData);
     } catch (error) {
       throw error;
+    }
+  },
+
+  // Start Dynamic Scripting Engine
+  startDynamicScripting: async () => {
+    try {
+      const response = await api.post("/api/cpu/userspace/start");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || error.message;
+    }
+  },
+
+  // Stop Dynamic Scripting Engine
+  stopDynamicScripting: async () => {
+    try {
+      const response = await api.post("/api/cpu/userspace/stop");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || error.message;
     }
   },
 
@@ -152,7 +171,7 @@ const apiServices = {
     try {
       return await apiAi.put(`/api/gt/${board_id}`, {
         board_name: board_name,
-        ground_truth: ground_truth
+        ground_truth: ground_truth,
       });
     } catch (error) {
       throw error;
