@@ -51,40 +51,9 @@ export default function Main() {
   const [model, setModel] = useState("SSD MobileNet V3 Small");
   const [cameraFps, setCameraFps] = useState(cpu?.fpsCamera);
   const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
-  const [inferenceFps, setInferenceFps] = useState({ realtime: 0, avg: 0 });
-  const [forwardPass, setForwardPass] = useState({ realtime: 0, avg: 0 });
+  const [inferenceFps, setInferenceFps] = useState();
+  const [forwardPass, setForwardPass] = useState();
   const [cameraError, setCameraError] = useState("");
-
-  // Kontrol Average
-  const [isRecording, setIsRecording] = useState(false);
-  const [targetSamples, setTargetSamples] = useState(100); // Default 100
-  const [avgProgress, setAvgProgress] = useState(0);
-
-  // Ref Buffer & Throttle
-  const fpsBufferRef = useRef([]);
-  const forwardPassBufferRef = useRef([]);
-  const lastUpdateRef = useRef(0);
-
-  // Ref Recording & Samples State
-  const isRecordingRef = useRef(isRecording);
-  const targetSamplesRef = useRef(targetSamples);
-
-  useEffect(() => {
-    isRecordingRef.current = isRecording;
-  }, [isRecording]);
-
-  useEffect(() => {
-    targetSamplesRef.current = targetSamples;
-  }, [targetSamples]);
-
-  // Clear/Reset Data Average
-  const handleClear = () => {
-    fpsBufferRef.current = [];
-    forwardPassBufferRef.current = [];
-    setAvgProgress(0);
-    setInferenceFps((prev) => ({ ...prev, avg: 0 }));
-    setForwardPass((prev) => ({ ...prev, avg: 0 }));
-  };
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
@@ -149,7 +118,7 @@ export default function Main() {
           await Promise.all([
             // Sync Hardware Configurations
             apiServices.getGovernorStatus().then(async (data) => {
-              console.log(data)
+              console.log(data);
               dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
               if (data?.governor === "userspace" && data?.tunables?.isDynamicScripting) {
                 await apiServices.startDynamicScripting();
@@ -266,47 +235,9 @@ export default function Main() {
           setCameraError(data?.camera_error);
         }
 
-        // 1. ISI BUFFER DENGAN SLIDING WINDOW
-        if (isRecordingRef.current) {
-          const maxSamples = targetSamplesRef.current;
+        setInferenceFps((prev) => Number(rawFps.toFixed(2)));
+        setForwardPass((prev) => Number(rawForwardPass.toFixed(2)));
 
-          fpsBufferRef.current.push(rawFps);
-          forwardPassBufferRef.current.push(rawForwardPass);
-
-          if (fpsBufferRef.current.length > maxSamples) {
-            fpsBufferRef.current.shift();
-            forwardPassBufferRef.current.shift();
-          }
-        }
-
-        // 2. THROTTLE UPDATE UI
-        const now = Date.now();
-        if (now - lastUpdateRef.current >= 200) {
-          lastUpdateRef.current = now;
-
-          const currentCount = fpsBufferRef.current.length;
-          const maxSamples = targetSamplesRef.current;
-          const calculatedProgress = maxSamples > 0 ? Math.min(Math.round((currentCount / maxSamples) * 100), 100) : 0;
-
-          const avgFps = currentCount > 0 ? Number((fpsBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
-          const avgForwardPass = currentCount > 0 ? Number((forwardPassBufferRef.current.reduce((a, b) => a + b, 0) / currentCount).toFixed(2)) : 0;
-
-          setAvgProgress(calculatedProgress);
-
-          if (isRecordingRef.current) {
-            setInferenceFps({
-              realtime: Number(rawFps.toFixed(2)),
-              avg: avgFps,
-            });
-            setForwardPass({
-              realtime: Number(rawForwardPass.toFixed(2)),
-              avg: avgForwardPass,
-            });
-          } else {
-            setInferenceFps((prev) => ({ ...prev, realtime: Number(rawFps.toFixed(2)) }));
-            setForwardPass((prev) => ({ ...prev, realtime: Number(rawForwardPass.toFixed(2)) }));
-          }
-        }
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
       }
@@ -430,11 +361,7 @@ export default function Main() {
             {/* Streaming Camera */}
             <div className="card-stream w-full h-fit flex items-center justify-center">
               {streamMode ? (
-                <img
-                  src={videoUrl}
-                  alt="Live Video Feed"
-                  className="w-full min-h-[365px] object-contain bg-black rounded-lg"
-                />
+                <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[365px] object-contain bg-black rounded-lg" />
               ) : (
                 <div className="min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center">
                   <p className="text-white text-4xl text-center">
@@ -556,38 +483,8 @@ export default function Main() {
                   <p className="text-info">Inference FPS:</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-info">{forwardPass?.realtime} ms</p>
-                  <p className="text-info">{inferenceFps?.realtime} ms</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 p-4 text-sm bg-blue-50 border border-blue-200 rounded-lg shadow-xs mt-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-info">Average: </p>
-                  <input type="number" min="1" max="1000" disabled={isRecording} value={targetSamples} onChange={(e) => setTargetSamples(Math.max(1, Number(e.target.value)))} className="w-full h-fit px-2 py-1 text-info font-medium text-gray-800 bg-white border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
-                  <p className="text-info">Data</p>
-                </div>
-                <div className="flex mt-2 gap-5">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-info">Forward-pass:</p>
-                    <p className="text-info">Inference FPS:</p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-info">{forwardPass.avg} ms</p>
-                    <p className="text-info">{inferenceFps?.avg} ms</p>
-                  </div>
-                </div>
-                <div className="mt-2 flex flex-col gap-2">
-                  <span>Sample Completeness: {avgProgress}%</span>
-                  <ProgressBar value={avgProgress} type="avg" />
-                  <div className="flex items-center text-center gap-2">
-                    <button disabled={streamMode == 0 || streamMode == null} onClick={() => setIsRecording(!isRecording)} className={`w-full px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:hover:bg-gray-300 ${isRecording ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
-                      <span>{isRecording ? "Pause" : "Count"}</span>
-                    </button>
-                    <button disabled={streamMode == 0 || streamMode == null} type="button" onClick={handleClear} className="w-full px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100">
-                      Clear
-                    </button>
-                  </div>
+                  <p className="text-info">{forwardPass} ms</p>
+                  <p className="text-info">{inferenceFps} ms</p>
                 </div>
               </div>
             </div>
