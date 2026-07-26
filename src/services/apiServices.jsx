@@ -43,7 +43,7 @@ const apiServices = {
   // Start Dynamic Scripting Engine
   startDynamicScripting: async () => {
     try {
-      const response = await api.post("/api/cpu/userspace/start");
+      const response = await api.get("/api/cpu/userspace/start");
       return response.data;
     } catch (error) {
       throw error.response?.data?.detail || error.message;
@@ -53,8 +53,18 @@ const apiServices = {
   // Stop Dynamic Scripting Engine
   stopDynamicScripting: async () => {
     try {
-      const response = await api.post("/api/cpu/userspace/stop");
+      const response = await api.get("/api/cpu/userspace/stop");
       return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || error.message;
+    }
+  },
+
+  // Validasi Dynamic Scripting
+  validateScript: async (paramsData) => {
+    try {
+      const response = await api.post("/api/cpu/userspace/validate", paramsData);
+      return response;
     } catch (error) {
       throw error.response?.data?.detail || error.message;
     }

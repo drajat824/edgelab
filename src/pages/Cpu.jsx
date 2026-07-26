@@ -443,6 +443,33 @@ export default function Cpu() {
     }
   };
 
+  const onValidate = async (e) => {
+    try {
+      const response = await apiServices.validateScript({ script: e });
+      const data = response?.data || response;
+
+      if (data?.status == "success") {
+        setTunable((prev) => ({
+          ...prev,
+          userspace: {
+            ...prev.userspace,
+            script: e,
+          },
+        }));
+      }
+    } catch (error) {
+      setModalConfig({
+        isOpen: true,
+        type: "warning",
+        title: "Script Error",
+        message: error?.response?.data?.detail || error?.message || error,
+        confirmText: "OK",
+        cancelText: "",
+        onConfirm: closeModal,
+      });
+    }
+  };
+
   // Safety Validation: Intercept Userspace Freq Bound Violation
   useEffect(() => {
     if (!cpu || cpu?.governor !== "userspace") return;
@@ -1189,21 +1216,7 @@ export default function Cpu() {
 
               <div className="flex flex-col lg:flex-row gap-4 pt-4">
                 <div className="flex-3/4">
-                  <ScriptEditor
-                    disabled={!tunable?.userspace?.isDynamicScripting || cpu?.governor != "userspace"}
-                    value={script}
-                    onChange={setScript}
-                    isDirty={script !== tunable?.userspace?.script}
-                    onSave={(e) => {
-                      setTunable((prev) => ({
-                        ...prev,
-                        userspace: {
-                          ...prev.userspace,
-                          script: e,
-                        },
-                      }));
-                    }}
-                  />
+                  <ScriptEditor disabled={!tunable?.userspace?.isDynamicScripting || cpu?.governor != "userspace"} value={script} onChange={setScript} isDirty={script !== tunable?.userspace?.script} onSave={(e) => onValidate(e)} />
                 </div>
                 <div className="flex-auto">
                   <ScriptReference />
