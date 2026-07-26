@@ -477,7 +477,7 @@ export default function Main() {
             </div>
             <div className="card">
               <p className="text-title">Instance Performance</p>
-              <div className="flex mt-2 gap-5">
+              <div className="flex mt-2 gap-5 justify-between">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Forward-pass:</p>
                   <p className="text-info">Inference FPS:</p>
