@@ -396,7 +396,7 @@ export default function Main() {
               <div className="flex-1">
                 {/* CPU Utilization */}
                 <div className="card w-full h-full rounded-lg shadow-md gap-4">
-                  <p className="text-title">CPU Utilization</p>
+                  <p className="text-title" style={{color: 'grey'}}>CPU Utilization</p>
                   <p className="text-info mb-4 mt-2">Average: {cpuUtilization?.average}%</p>
                   <div className="flex gap-8 mb-4">
                     <div className="gap-2 w-full">
@@ -461,8 +461,8 @@ export default function Main() {
             )}
 
             <div className="card">
-              <p className="text-title">Accuracy Metrics</p>
-              <div className="flex mt-2 gap-5">
+              <p className="text-title" style={{color: 'grey'}}>Accuracy Metrics</p>
+              <div className="flex justify-between mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Detection Rate:</p>
                   <p className="text-info">Avg. Confidence Score:</p>
@@ -476,7 +476,7 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title">Instance Performance</p>
+              <p className="text-title" style={{color: 'grey'}}>Instance Performance</p>
               <div className="flex mt-2 gap-5 justify-between">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Forward-pass:</p>
@@ -493,8 +493,8 @@ export default function Main() {
             <div className="flex-none flex flex-col min-w-75">
               <div className="flex flex-auto flex-col gap-2">
                 <div className="card">
-                  <p className="text-title">CPU Status</p>
-                  <div className="flex mt-2 gap-5">
+                  <p className="text-title" style={{color: 'grey'}}>CPU Status</p>
+                  <div className="flex justify-between mt-2 gap-5">
                     <div className="flex flex-col gap-1">
                       <p className="text-info">Current Frequency:</p>
                       <p className="text-info">Temperature:</p>
@@ -506,7 +506,7 @@ export default function Main() {
                   </div>
                 </div>
                 <div className="card">
-                  <div className="flex gap-4">
+                  <div className="flex justify-between gap-4">
                     <div className="flex flex-col gap-1">
                       <p className="text-subinfo">CPU Governor:</p>
                       <p className="text-subinfo">Thread Allocation:</p>

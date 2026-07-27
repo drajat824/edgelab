@@ -130,10 +130,33 @@ function generateUserspace({ status, tunable, governor }) {
   const output = [];
   const config = tunable?.[governor];
 
+  console.log(config);
+
   if (status[governor]?.fixedFrequency && config?.fixedFrequency) {
     output.push({
       label: "Fixed Frequency",
       command: `echo ${config.fixedFrequency} | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed`,
+    });
+  }
+
+  if (status[governor]?.isDynamicScripting && config?.isDynamicScripting) {
+    output.push({
+      label: "Dynamic scripting diaktifkan",
+      command: `-`,
+    });
+  }
+
+  if (status[governor]?.isDynamicScripting && !config?.isDynamicScripting) {
+    output.push({
+      label: "Dynamic scripting dinonaktifkan",
+      command: `-`,
+    });
+  }
+
+  if (status[governor]?.script && config?.script) {
+    output.push({
+      label: "Script ditambahkan",
+      command: `-`,
     });
   }
 
@@ -169,14 +192,7 @@ const generators = {
 
 // --- MAIN EXPORT FUNCTION ---
 
-export function generateCommandFunction({
-  status,
-  draft,
-  governor,
-  cores,
-  numThread,
-  freqDraft,
-}) {
+export function generateCommandFunction({ status, draft, governor, cores, numThread, freqDraft }) {
   const output = [];
 
   // 1. Jika governor sistem yang berubah
