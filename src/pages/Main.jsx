@@ -16,6 +16,7 @@ import Loading from "../components/Loading.jsx";
 import Skeleton from "../components/Skeleton.jsx";
 import ActionLoading from "../components/ActionLoading.jsx";
 import ModalAlert from "../components/ModalAlert";
+import FileInput from "../components/InputFile.jsx";
 
 // 5. Assets, Images & Constants
 import Play from "../assets/play.svg";
@@ -25,7 +26,7 @@ import CARDS from "../components/Cards";
 export default function Main() {
   // Custom Hooks Configuration Context
   const { cpu, dispatch } = useCPU();
-  const { boards, dispatch: dispatchGround } = useGround(); // Context untuk Ground Truth / Boards
+  const { boards, dispatch: dispatchGround } = useGround();
 
   // Static API Endpoints
   const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
@@ -37,10 +38,10 @@ export default function Main() {
   // Display State Local untuk Boards
   const [displayBoards, setDisplayBoards] = useState([]);
 
-  // Real-time CPU Performance Metrics
+  // Static API Endpoints Metrics
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
-    cores: [0, 0, 0, 0],
+    core: [0, 0, 0, 0],
   });
   const [cpuStatus, setCpuStatus] = useState({
     frequency: "0.0 GHz",
@@ -48,12 +49,14 @@ export default function Main() {
   });
 
   // Object Detection Model & Camera Framing
-  const [model, setModel] = useState("SSD MobileNet V3 Small");
+  const [models, setModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState(cpu?.selectedModel);
   const [cameraFps, setCameraFps] = useState(cpu?.fpsCamera);
   const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
   const [inferenceFps, setInferenceFps] = useState();
   const [forwardPass, setForwardPass] = useState();
   const [cameraError, setCameraError] = useState("");
+  const [file, setFile] = useState(null);
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
@@ -83,7 +86,7 @@ export default function Main() {
     }
   };
 
-  // 1. Function Fetch Boards (Ground Truth)
+  // Function Fetch Boards (Ground Truth)
   const fetchBoards = async () => {
     try {
       const response = await apiServices.getGT();
@@ -108,7 +111,37 @@ export default function Main() {
     }
   };
 
-  // 2. Main Initial Load (Combine Hardware Data + Boards GT Data)
+  // Handle file error
+  const timeoutRef = useRef(null);
+  const handleFileError = (error) => {
+    if (error) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "File Error",
+          message: error?.message,
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
+      }, 500);
+    }
+  };
+
+  // Clear timeout file error
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Main Initial Load (Combine Hardware Data + Boards GT Data)
   useEffect(() => {
     setIsInitialLoading(true);
 
@@ -118,7 +151,6 @@ export default function Main() {
           await Promise.all([
             // Sync Hardware Configurations
             apiServices.getGovernorStatus().then(async (data) => {
-              console.log(data);
               dispatch({ type: "CHANGE_GOVERNOR", payload: data.governor });
               if (data?.governor === "userspace" && data?.tunables?.isDynamicScripting) {
                 await apiServices.startDynamicScripting();
@@ -127,10 +159,10 @@ export default function Main() {
               }
             }),
             apiServices.getThread().then((data) => {
-              dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.num_threads });
+              dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.thread });
             }),
-            apiServices.getCores().then((data) => {
-              dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
+            apiServices.getCore().then((data) => {
+              dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.core });
             }),
             apiServices.getFps().then((data) => {
               dispatch({ type: "CHANGE_FPS_CONFIG", payload: data?.fps_camera });
@@ -141,6 +173,11 @@ export default function Main() {
                 setStreamMode(0);
                 setIsRecording(false);
               }
+            }),
+            apiServices.getModel().then((data) => {
+              const resData = data?.data || data;
+              dispatch({ type: "GET_MODELS", payload: resData?.models });
+              dispatch({ type: "CHANGE_SELECTED_MODEL", payload: resData?.selected_model });
             }),
             // Sync Boards GT Data
             fetchBoards(),
@@ -176,6 +213,15 @@ export default function Main() {
   useEffect(() => {
     setCameraFps(cpu?.fpsCamera);
   }, [cpu?.fpsCamera]);
+
+  useEffect(() => {
+    console.log(cpu?.selectedModel, "WOY");
+    setSelectedModel(cpu?.selectedModel);
+  }, [cpu?.selectedModel]);
+
+  useEffect(() => {
+    setModels(cpu?.models);
+  }, [cpu?.models]);
 
   // Match Selected Evaluation Board with Local Reference JSON Data
   useEffect(() => {
@@ -237,7 +283,6 @@ export default function Main() {
 
         setInferenceFps((prev) => Number(rawFps.toFixed(2)));
         setForwardPass((prev) => Number(rawForwardPass.toFixed(2)));
-
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
       }
@@ -330,6 +375,36 @@ export default function Main() {
     setIsActionLoading(false);
   };
 
+  const onChangeModel = async (e) => {
+    if (e === selectedModel) return;
+    setIsActionLoading(true);
+
+    await withMinimumDelay(async () => {
+      try {
+        const response = await apiServices.selectModel(e);
+        const resData = response?.data || response;
+        if (resData?.status === "success" || response?.status === 200) {
+          dispatch({
+            type: "CHANGE_SELECTED_MODEL",
+            payload: e,
+          });
+        }
+      } catch (error) {
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Update Failed",
+          message: error?.response?.data?.detail || error?.message || "Failed to change model.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
+      }
+    }, 400);
+
+    setIsActionLoading(false);
+  };
+
   if (!!isInitialLoading)
     return (
       <div className="parent">
@@ -351,7 +426,10 @@ export default function Main() {
         <div className="flex flex-col flex-1">
           <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
             {/* Model & FPS  */}
-            <Dropdown width="w-65" value={model} onChange={setModel} options={["SSD MobileNet V3 Small", "SSD MobileNet V3 Large"]} disabled={streamMode === 1} />
+            <div className="flex gap-2">
+              <Dropdown width="w-65" value={selectedModel} onChange={onChangeModel} options={models} type='model' />
+              <FileInput accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} />
+            </div>
             <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
           </div>
 
@@ -396,37 +474,39 @@ export default function Main() {
               <div className="flex-1">
                 {/* CPU Utilization */}
                 <div className="card w-full h-full rounded-lg shadow-md gap-4">
-                  <p className="text-title" style={{color: 'grey'}}>CPU Utilization</p>
+                  <p className="text-title" style={{ color: "grey" }}>
+                    CPU Utilization
+                  </p>
                   <p className="text-info mb-4 mt-2">Average: {cpuUtilization?.average}%</p>
                   <div className="flex gap-8 mb-4">
                     <div className="gap-2 w-full">
-                      <ProgressBar value={cpuUtilization?.cores[0]} />
+                      <ProgressBar value={cpuUtilization?.core[0]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 0</span>
-                        <span className="text-subinfo">{cpuUtilization?.cores[0]}%</span>
+                        <span className="text-subinfo">{cpuUtilization?.core[0]}%</span>
                       </div>
                     </div>
                     <div className="gap-2 w-full">
-                      <ProgressBar value={cpuUtilization?.cores[2]} />
+                      <ProgressBar value={cpuUtilization?.core[2]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 2</span>
-                        <span className="text-subinfo">{cpuUtilization?.cores[2]}%</span>
+                        <span className="text-subinfo">{cpuUtilization?.core[2]}%</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-8">
                     <div className="gap-2 w-full">
-                      <ProgressBar value={cpuUtilization?.cores[1]} />
+                      <ProgressBar value={cpuUtilization?.core[1]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 1</span>
-                        <span className="text-subinfo">{cpuUtilization?.cores[1]}%</span>
+                        <span className="text-subinfo">{cpuUtilization?.core[1]}%</span>
                       </div>
                     </div>
                     <div className="gap-2 w-full">
-                      <ProgressBar value={cpuUtilization?.cores[3]} />
+                      <ProgressBar value={cpuUtilization?.core[3]} />
                       <div className="flex justify-between text-sm mt-1">
                         <span className="text-subinfo">Core 3</span>
-                        <span className="text-subinfo">{cpuUtilization?.cores[3]}%</span>
+                        <span className="text-subinfo">{cpuUtilization?.core[3]}%</span>
                       </div>
                     </div>
                   </div>
@@ -461,7 +541,9 @@ export default function Main() {
             )}
 
             <div className="card">
-              <p className="text-title" style={{color: 'grey'}}>Accuracy Metrics</p>
+              <p className="text-title" style={{ color: "grey" }}>
+                Accuracy Metrics
+              </p>
               <div className="flex justify-between mt-2 gap-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Detection Rate:</p>
@@ -476,7 +558,9 @@ export default function Main() {
               </div>
             </div>
             <div className="card">
-              <p className="text-title" style={{color: 'grey'}}>Instance Performance</p>
+              <p className="text-title" style={{ color: "grey" }}>
+                Instance Performance
+              </p>
               <div className="flex mt-2 gap-5 justify-between">
                 <div className="flex flex-col gap-1">
                   <p className="text-info">Forward-pass:</p>
@@ -493,7 +577,9 @@ export default function Main() {
             <div className="flex-none flex flex-col min-w-75">
               <div className="flex flex-auto flex-col gap-2">
                 <div className="card">
-                  <p className="text-title" style={{color: 'grey'}}>CPU Status</p>
+                  <p className="text-title" style={{ color: "grey" }}>
+                    CPU Status
+                  </p>
                   <div className="flex justify-between mt-2 gap-5">
                     <div className="flex flex-col gap-1">
                       <p className="text-info">Current Frequency:</p>

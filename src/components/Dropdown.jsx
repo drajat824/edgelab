@@ -2,22 +2,22 @@ import { useState, useRef, useEffect } from "react";
 import DropdownIcon from "../assets/dropdown.svg";
 import DropdownActive from "../assets/dropdown-active.svg";
 
-export default function Dropdown({
-  label = "Select",
-  valueLabel = '',
-  options = [],
-  value,
-  onChange,
-  disabled = false,
-  width = "w-fit",
-  style = {},
-  actived = false,
-  inCard = false,
-  capslock = true,
-  unit = "",
-}) {
+export default function Dropdown({ label = "Select", valueLabel = "", options = [], value, onChange, disabled = false, width = "w-fit", style = {}, actived = false, inCard = false, capslock = true, unit = "", type = "" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef();
+
+  // Helper untuk memformat tampilan teks tanpa mengubah nilai asli data
+  const formatDisplay = (val) => {
+    if (!val) return "";
+    let strVal = String(val);
+
+    // Jika type adalah 'model', hapus ekstensi .tflite dari tampilan
+    if (type === "model") {
+      strVal = strVal.replace(/\.tflite$/i, "");
+    }
+
+    return strVal;
+  };
 
   // close kalau klik di luar
   useEffect(() => {
@@ -39,22 +39,15 @@ export default function Dropdown({
         className={`flex justify-between items-center gap-4 rounded-lg card-dorpdown cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed h-[45px] transition-colors duration-200 border-[1px] 
     ${actived ? "border-blue-500" : inCard ? "border-black" : "border-transparent"}`}
       >
-        <span
-          className={`${capslock && "uppercase"} truncate ${actived ? "text-blue-500" : "text-gray-700"}`}
-        >
+        <span className={`${capslock && "uppercase"} truncate ${actived ? "text-blue-500" : "text-gray-700"}`}>
           {valueLabel && <span>{valueLabel} </span>}
-          {value + ` ${unit}` || "Select..."}
+          {value ? `${formatDisplay(value)} ${unit}` : "Select..."}
         </span>
-        <img
-          src={actived ? DropdownActive : DropdownIcon}
-          alt="Dropdown"
-          className={`w-4 h-3 ${open ? "rotate-180" : ""}`}
-        />
+        <img src={actived ? DropdownActive : DropdownIcon} alt="Dropdown" className={`w-4 h-3 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {/* DROPDOWN */}
       {open && options?.length > 0 ? (
-        /* 1. Tambahkan class "group" pada container dropdown ini */
         <div className="absolute left-0 mt-2 w-full bg-[var(--white)] border border-[#2a2a3a] rounded-lg overflow-hidden z-50 shadow-lg group">
           {options.map((opt, index) => {
             const isSelected = opt === value;
@@ -63,22 +56,23 @@ export default function Dropdown({
               <button
                 key={index}
                 onClick={() => {
-                  onChange(opt);
+                  onChange(opt); // Tetap mengirimkan nilai asli (misal: "satu.tflite")
                   setOpen(false);
                 }}
                 disabled={disabled}
-                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 ${capslock && "uppercase"} hover:bg-[var(--menu)] hover:text-white ${
-                  isSelected
-                    ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white"
-                    : "text-current"
-                }`}
+                className={`w-full text-left px-4 py-2 transition cursor-pointer disabled:opacity-50 ${capslock && "uppercase"} hover:bg-[var(--menu)] hover:text-white ${isSelected ? "bg-[var(--menu)] text-white group-hover:bg-transparent group-hover:text-current hover:!bg-[var(--menu)] hover:!text-white" : "text-current"}`}
               >
-                <p className="truncate">{valueLabel && <span>{valueLabel}</span>} {opt + ` ${unit}`}</p>
+                <p className="truncate">
+                  {valueLabel && <span>{valueLabel} </span>}
+                  {formatDisplay(opt)} {unit}
+                </p>
               </button>
             );
           })}
         </div>
-      ) : <div/>}
+      ) : (
+        <div />
+      )}
     </div>
   );
 }

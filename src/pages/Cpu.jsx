@@ -39,8 +39,8 @@ export default function Cpu() {
   // Configuration Draft States
   const [governor, setGovernor] = useState(cpu?.governor);
   const [freq, setFreq] = useState({ max: cpu?.maxFreq, min: cpu?.minFreq });
-  const [numThread, setNumThread] = useState(cpu?.numThread);
-  const [cores, setCores] = useState(cpu?.cores);
+  const [thread, setThread] = useState(cpu?.thread);
+  const [core, setCores] = useState(cpu?.core);
   const [script, setScript] = useState(cpu?.userspace?.script);
 
   // Governor Tunable Parameters (Current Draft vs Hardware Baseline)
@@ -91,10 +91,10 @@ export default function Cpu() {
         });
       }),
       apiServices.getThread().then((data) => {
-        dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.num_threads });
+        dispatch({ type: "CHANGE_THREAD_CONFIG", payload: data?.thread });
       }),
-      apiServices.getCores().then((data) => {
-        dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.cores });
+      apiServices.getCore().then((data) => {
+        dispatch({ type: "CHANGE_CORE_CONFIG", payload: data?.core });
       }),
     ])
       .catch((err) => {
@@ -132,7 +132,7 @@ export default function Cpu() {
 
   useEffect(() => {
     if (cpu?.thread === undefined) return;
-    setNumThread(cpu.thread);
+    setThread(cpu.thread);
   }, [cpu?.thread]);
 
   useEffect(() => {
@@ -188,12 +188,12 @@ export default function Cpu() {
       ...tunable,
       governor,
       freq,
-      thread: numThread,
-      core: cores,
+      thread: thread,
+      core: core,
     };
 
     return getChangedFields(cpu, currentDraft);
-  }, [cpu, tunable, freq, governor, numThread, cores, originalTunable]);
+  }, [cpu, tunable, freq, governor, thread, core, originalTunable]);
 
   // Memoized: Individual Save Buttons Disabled/Enabled Matrices
   const disabledButton = useMemo(() => {
@@ -225,8 +225,8 @@ export default function Cpu() {
     const command = generateCommandFunction({
       status: finalStatus,
       governor: governor,
-      numThread: targetDraft.numThread || numThread,
-      cores: targetDraft.cores || cores,
+      thread: targetDraft.thread || thread,
+      core: targetDraft.core || core,
       draft: targetDraft.tunable || tunable,
       freqDraft: targetDraft.freqDraft || freq,
     });
@@ -378,15 +378,15 @@ export default function Cpu() {
     const ACTION_MIN_DELAY = 400;
 
     try {
-      const response = await apiServices.updateThread({ numThread: numThread });
+      const response = await apiServices.updateThread({ thread: thread });
       const data = response?.data || response;
 
       if (data && data.status === "success") {
         handleSaveAction({
           type: "CHANGE_THREAD_CONFIG",
-          payload: data.num_threads,
+          payload: data.thread,
           customStatus: { thread: true },
-          targetDraft: { numThread },
+          targetDraft: { thread },
           logTarget: "threadCore",
         });
       }
@@ -414,25 +414,25 @@ export default function Cpu() {
     const ACTION_MIN_DELAY = 400;
 
     try {
-      const response = await apiServices.updateCores({ cores: cores });
+      const response = await apiServices.updateCore({ core: core });
       const data = response?.data || response;
 
       if (data && data.status === "success") {
         handleSaveAction({
           type: "CHANGE_CORE_CONFIG",
-          payload: data.cores,
+          payload: data.core,
           customStatus: { core: true },
-          targetDraft: { cores: cores },
+          targetDraft: { core: core },
           logTarget: "threadCore",
         });
       }
     } catch (error) {
-      console.error("Error executing updateCores:", error);
+      console.error("Error executing updateCore:", error);
       setModalConfig({
         isOpen: true,
         type: "warning",
         title: "Update Failed",
-        message: error?.response?.data?.detail || error?.message || "Failed to update CPU cores.",
+        message: error?.response?.data?.detail || error?.message || "Failed to update CPU core.",
         confirmText: "OK",
         cancelText: "",
         onConfirm: closeModal,
@@ -1250,7 +1250,7 @@ export default function Cpu() {
         {/* Title  */}
         <h1 className="text-xtitle">Thread Allocation & Core Pinning</h1>
 
-        <p className="text-subinfo mt-2 text-gray-500">Optimize performance by assigning processes to specific CPU cores and managing thread distribution.</p>
+        <p className="text-subinfo mt-2 text-gray-500">Optimize performance by assigning processes to specific CPU core and managing thread distribution.</p>
 
         {/* Card  */}
         <div className="flex flex-col lg:flex-row pt-4 justify-between gap-4 h-full">
@@ -1263,22 +1263,22 @@ export default function Cpu() {
                 <InputWithUnit
                   actived={status?.thread}
                   type="number"
-                  value={numThread}
+                  value={thread}
                   onChange={(e) => {
-                    setNumThread(e.target.value);
+                    setThread(e.target.value);
                   }}
                   onBlur={() => {
-                    let value = numThread;
+                    let value = thread;
                     value = Number(value);
                     if (value < 1) value = 1;
                     if (value > 4) value = 4;
-                    setNumThread(value);
+                    setThread(value);
                   }}
                   placeholder="Input thread"
                 />
               </div>
               <p className="text-warning">*Available Maximum Thread: 4</p>
-              <ButtonSave disabled={cpu?.thread === numThread || numThread == ""} onClick={onSaveThread} />
+              <ButtonSave disabled={cpu?.thread === thread || thread == ""} onClick={onSaveThread} />
             </div>
           </div>
 
@@ -1290,8 +1290,8 @@ export default function Cpu() {
               <div>
                 <RadioButton
                   multiple
-                  name="cores"
-                  value={cores}
+                  name="core"
+                  value={core}
                   onChange={(e) => {
                     const sortedCores = [...e].sort((a, b) => a - b);
                     setCores(sortedCores);
@@ -1304,7 +1304,7 @@ export default function Cpu() {
                   ]}
                 />
               </div>
-              <ButtonSave disabled={cpu?.core === cores || cores?.length == 0} onClick={onSaveCore} />
+              <ButtonSave disabled={cpu?.core === core || core?.length == 0} onClick={onSaveCore} />
             </div>
           </div>
         </div>

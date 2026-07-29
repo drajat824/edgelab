@@ -1,13 +1,15 @@
 export const initialState = {
   governor: "",
 
-  numThread: null,
-  cores: [],
+  thread: null,
+  core: [],
 
   maxFreq: null,
   minFreq: null,
 
   fpsCamera: null,
+  models: [],
+  selectedModel: "",
 
   ondemand: {
     thresholdUp: null,
@@ -36,7 +38,6 @@ export const initialState = {
     isDynamicScripting: false,
     script: "",
   },
-
 };
 
 export function cpuReducer(state, action) {
@@ -76,6 +77,18 @@ export function cpuReducer(state, action) {
       return {
         ...state,
         fpsCamera: action.payload,
+      };
+
+    case "GET_MODELS":
+      return {
+        ...state,
+        models: action.payload,
+      };
+
+    case "CHANGE_SELECTED_MODEL":
+      return {
+        ...state,
+        selectedModel: action.payload,
       };
 
     case "RESET":

@@ -90,10 +90,10 @@ const apiServices = {
     }
   },
 
-  updateThread: async ({ numThread }) => {
+  updateThread: async ({ thread }) => {
     try {
       return await apiAi.post("/api/thread", {
-        num_threads: numThread,
+        thread: thread,
       });
     } catch (error) {
       throw error;
@@ -101,18 +101,18 @@ const apiServices = {
   },
 
   // CORES
-  getCores: async () => {
+  getCore: async () => {
     try {
-      return await apiAi.get("/api/cores");
+      return await apiAi.get("/api/core");
     } catch (error) {
       throw error;
     }
   },
 
-  updateCores: async ({ cores }) => {
+  updateCore: async ({ core }) => {
     try {
-      return await apiAi.post("/api/cores", {
-        cores: cores,
+      return await apiAi.post("/api/core", {
+        core: core,
       });
     } catch (error) {
       throw error;
@@ -211,6 +211,45 @@ const apiServices = {
     try {
       const res = await api.post("/api/session/heartbeat", { token });
       return res;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // MODEL
+
+  // Get Model
+  getModel: async () => {
+    try {
+      return await apiAi.get("/api/models");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Select Model
+  selectModel: async (model_name) => {
+    try {
+      return await apiAi.post(`/api/models`, {
+        model_name: model_name,
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Upload Model
+  uploadModel: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await apiAi.post("/api/upload-models", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response.data;
     } catch (error) {
       throw error;
     }
