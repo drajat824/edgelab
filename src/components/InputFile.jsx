@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 
-const FileInput = ({ id = "fileInput", name = "file", accept = ".tflite", maxSizeMB = 50, onError, onChange, onRemove, disabled = false, className = "" }) => {
+const FileInput = ({ id = "fileInput", name = "file", accept = ".tflite", maxSizeMB = 50, onError, onChange, onRemove, disabled = false, className = "", handleSave }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -101,7 +101,7 @@ const FileInput = ({ id = "fileInput", name = "file", accept = ".tflite", maxSiz
   };
 
   return (
-    <div className={`w-fit ${className}`}>
+    <div className={`w-fit h-fit flex ${className}`}>
       <div className="relative group w-fit">
         <div onClick={() => !disabled && fileInputRef.current?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className={`p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${disabled ? "bg-slate-100 border-slate-300 opacity-60 cursor-not-allowed" : isDragging ? "bg-blue-50 border-blue-500 scale-[1.01]" : "bg-slate-50 border-slate-300 hover:bg-blue-50/50 hover:border-blue-400"}`}>
           <input ref={fileInputRef} type="file" id={id} name={name} accept={accept} onChange={handleFileChange} disabled={disabled} className="hidden" />
@@ -124,17 +124,35 @@ const FileInput = ({ id = "fileInput", name = "file", accept = ".tflite", maxSiz
 
       {/* Preview File Terpilih */}
       {selectedFile && (
-        <div className="mt-3 flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-          <div className="flex items-center justify-center px-2.5 py-1.5 bg-sky-600 text-white font-bold text-xs rounded-md uppercase tracking-wider shrink-0">{selectedFile.name.split(".").pop()}</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate" title={selectedFile.name}>
+        <div className="flex items-center ml-3">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-800 truncate w-20" title={selectedFile.name}>
               {selectedFile.name}
             </p>
             <p className="text-xs text-slate-400">{formatBytes(selectedFile.size)}</p>
           </div>
-          <button type="button" onClick={handleRemove} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors text-lg leading-none shrink-0" title="Hapus berkas">
-            &times;
-          </button>
+          <div className="flex ml-1 gap-2">
+            {/* Tombol Hapus / Batal */}
+            <button type="button" onClick={handleRemove} className="cursor-pointer w-8 h-8 text-white hover:bg-red-500 bg-red-400 shadow-sm rounded-md transition-colors flex items-center justify-center shrink-0" title="Hapus berkas">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Tombol Simpan */}
+            <button
+              type="button"
+              onClick={() => {
+                (handleSave(selectedFile), setSelectedFile(null));
+              }}
+              className="cursor-pointer w-8 h-8 text-white hover:bg-emerald-600 bg-emerald-500 shadow-sm rounded-md transition-colors flex items-center justify-center shrink-0"
+              title="Simpan berkas"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
     </div>

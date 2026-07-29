@@ -171,7 +171,6 @@ export default function Main() {
               if (data?.stream_status === "start") setStreamMode(1);
               if (data?.stream_status === "stop") {
                 setStreamMode(0);
-                setIsRecording(false);
               }
             }),
             apiServices.getModel().then((data) => {
@@ -185,7 +184,6 @@ export default function Main() {
         } catch (err) {
           console.error("Initial Sync Error:", err);
           setStreamMode(null);
-          setIsRecording(false);
           setModalConfig({
             isOpen: true,
             type: "warning",
@@ -215,7 +213,6 @@ export default function Main() {
   }, [cpu?.fpsCamera]);
 
   useEffect(() => {
-    console.log(cpu?.selectedModel, "WOY");
     setSelectedModel(cpu?.selectedModel);
   }, [cpu?.selectedModel]);
 
@@ -322,7 +319,6 @@ export default function Main() {
             await apiServices.stopVideo();
           }
         } catch (error) {
-          setIsRecording(false);
           setStreamMode(null);
           setModalConfig({
             isOpen: true,
@@ -405,6 +401,49 @@ export default function Main() {
     setIsActionLoading(false);
   };
 
+  const handleSaveFile = async () => {
+    setIsActionLoading(true);
+
+    await withMinimumDelay(async () => {
+      try {
+        const response = await apiServices.uploadModel(file);
+        if (response?.status === "success") {
+          setFile(null);
+          try {
+            apiServices.getModel().then((data) => {
+              const resData = data?.data || data;
+              dispatch({ type: "GET_MODELS", payload: resData?.models });
+              dispatch({ type: "CHANGE_SELECTED_MODEL", payload: resData?.selected_model });
+            });
+          } catch (err) {
+            setStreamMode(null);
+            setModalConfig({
+              isOpen: true,
+              type: "warning",
+              title: "Sync Failed",
+              message: err?.message || "Failed to synchronize initial hardware or board data.",
+              confirmText: "OK",
+              cancelText: "",
+              onConfirm: closeModal,
+            });
+          }
+        }
+      } catch (error) {
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Upload Failed",
+          message: error?.response?.data?.detail || error?.message || "Failed to upload file.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
+      }
+    }, 400);
+
+    setIsActionLoading(false);
+  };
+
   if (!!isInitialLoading)
     return (
       <div className="parent">
@@ -424,30 +463,68 @@ export default function Main() {
       <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
         {/* STREAMING  */}
         <div className="flex flex-col flex-1">
-          <div className="flex flex-col lg:flex-row justify-between mb-4 gap-4">
-            {/* Model & FPS  */}
-            <div className="flex gap-2">
-              <Dropdown width="w-65" value={selectedModel} onChange={onChangeModel} options={models} type='model' />
-              <FileInput accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} />
+          {/* <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
+            <div className="flex flex-col xl:flex-row gap-2">
+              <Dropdown width="w-48" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
+              <FileInput className="mt-2 xl:mt-0" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} />
             </div>
-            <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+            <div className="flex flex-col gap-4 items-end bg-red-100">
+              <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+              <div className="block lg:hidden">
+                <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+              </div>
+            </div>
+          </div> */}
+
+          <div className="flex flex-row justify-between mb-4 gap-4">
+            {/* Model & FPS  */}
+            <div className="flex flex-col xl:flex-row gap-2">
+              <Dropdown width="w-48" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
+              <FileInput className="mt-2 xl:mt-0" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
+            </div>
+            <div className="flex flex-col gap-4 items-end">
+              <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+              <div className="block lg:hidden">
+                <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+              </div>
+            </div>
           </div>
 
           {/* CHILD  */}
-
           <div className="flex flex-col gap-6">
-            {/* Streaming Camera */}
-            <div className="card-stream w-full h-fit flex items-center justify-center">
-              {streamMode ? (
-                <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[365px] object-contain bg-black rounded-lg" />
-              ) : (
-                <div className="min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center">
-                  <p className="text-white text-4xl text-center">
-                    DETECTION <br />
-                    STOPPED
-                  </p>
-                </div>
-              )}
+            <div className="flex gap-4">
+              {/* Streaming Camera */}
+              <div className="card-stream w-full h-fit flex items-center justify-center">
+                {streamMode ? (
+                  <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[365px] object-contain bg-black rounded-lg" />
+                ) : (
+                  <div className="min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center">
+                    <p className="text-white text-4xl text-center">
+                      DETECTION <br />
+                      STOPPED
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-1/2 h-[100%] hidden md:block lg:hidden">
+                {selectedBoard ? (
+                  <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10 h-100">
+                    <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
+                      {itemBoard?.slots?.map((card, i) => {
+                        return card?.value ? (
+                          <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
+                        ) : (
+                          /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
+                          <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div />
+                )}
+              </div>
             </div>
 
             {/* Button */}
@@ -461,7 +538,7 @@ export default function Main() {
                 disabled={streamMode === 0 || streamMode === null}
                 className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
                 onClick={() => {
-                  (setStreamMode(0), setIsRecording(false));
+                  setStreamMode(0);
                 }}
               >
                 <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
@@ -518,13 +595,14 @@ export default function Main() {
 
         {/* ACCURACY METRICS  */}
         <div className="flex-none flex flex-col">
-          <div className="flex justify-end">
+          <div className="flex-col items-end hidden lg:flex">
             <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+            <div className="h-16 hidden md:block lg:block xl:hidden " />
           </div>
 
           <div className="flex flex-col gap-2 mt-4">
             {selectedBoard ? (
-              <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
+              <div className="border border-slate-200 p-5 flex md:hidden lg:flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
                 <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
                   {itemBoard?.slots?.map((card, i) => {
                     return card?.value ? (
