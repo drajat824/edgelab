@@ -35,9 +35,6 @@ export default function Main() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // Display State Local untuk Boards
-  const [displayBoards, setDisplayBoards] = useState([]);
-
   // Static API Endpoints Metrics
   const [cpuUtilization, setCpuUtilization] = useState({
     average: 0,
@@ -93,12 +90,6 @@ export default function Main() {
       if (response?.data) {
         // Sync State Global
         dispatchGround({ type: "SET_BOARDS", payload: response.data });
-
-        // Sync State Lokal (Jika menggunakan fungsi transform data)
-        if (typeof transformBoardsData === "function") {
-          const transformed = transformBoardsData(response.data);
-          setDisplayBoards(transformed);
-        }
 
         // Auto select board pertama jika belum ada yang terpilih
         if (response.data.length > 0 && !selectedBoard) {
@@ -446,7 +437,7 @@ export default function Main() {
 
   if (!!isInitialLoading)
     return (
-      <div className="parent">
+      <div className="parent overflow-x-hidden">
         <h1 className="text-xtitle">Main Monitor</h1>
         <p className="text-subinfo mt-2 text-gray-500">Monitor camera streams along with model and CPU metrics.</p>
         <Skeleton />
@@ -454,69 +445,77 @@ export default function Main() {
     );
 
   return (
-    <div className="parent">
+    <div className="parent overflow-x-hidden">
       <h1 className="text-xtitle">Main Monitor</h1>
       <p className="text-subinfo mt-2 text-gray-500">Monitor camera streams along with model and CPU metrics.</p>
 
       {/* Main Streaming  */}
-
-      <div className="flex flex-col lg:flex-row  max-w-screen justify-between mt-4 gap-4">
-        {/* STREAMING  */}
-        <div className="flex flex-col flex-1">
-          {/* <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
-            <div className="flex flex-col xl:flex-row gap-2">
-              <Dropdown width="w-48" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
-              <FileInput className="mt-2 xl:mt-0" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} />
-            </div>
-            <div className="flex flex-col gap-4 items-end bg-red-100">
-              <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
-              <div className="block lg:hidden">
-                <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
-              </div>
-            </div>
-          </div> */}
-
-          <div className="flex flex-row justify-between mb-4 gap-4">
-            {/* Model & FPS  */}
-            <div className="flex flex-col xl:flex-row gap-2">
-              <Dropdown width="w-48" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
-              <FileInput className="mt-2 xl:mt-0" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
-            </div>
-            <div className="flex flex-col gap-4 items-end">
-              <Dropdown width="w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
-              <div className="block lg:hidden">
-                <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
-              </div>
-            </div>
-          </div>
-
+      <div className="flex flex-col lg:flex-row w-full justify-between mt-4 gap-4">
+        <div className="flex flex-col flex-1 w-full min-w-0">
           {/* CHILD  */}
-          <div className="flex flex-col gap-6">
-            <div className="flex gap-4">
-              {/* Streaming Camera */}
-              <div className="card-stream w-full h-fit flex items-center justify-center">
-                {streamMode ? (
-                  <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[365px] object-contain bg-black rounded-lg" />
-                ) : (
-                  <div className="min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center">
-                    <p className="text-white text-4xl text-center">
-                      DETECTION <br />
-                      STOPPED
-                    </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap justify-between mb-4 gap-4">
+              <div className="flex flex-row gap-2 w-full sm:w-auto items-center">
+                <Dropdown width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
+                <FileInput className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
+              </div>
+              <Dropdown width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+            </div>
+            <Dropdown style={{ top: -10 }} width="w-full sm:w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+
+            {/* Monitoring Section */}
+            <div className="flex flex-col lg:flex-row justify-between gap-4">
+              <div className="flex flex-col gap-4 flex-1 w-full min-w-0">
+                <div className="flex gap-4">
+                  <div className="card-stream w-full h-fit flex items-center justify-center overflow-hidden">
+                    {streamMode ? (
+                      <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[250px] sm:min-h-[365px] object-contain bg-black rounded-lg" />
+                    ) : (
+                      <div className="min-h-[250px] sm:min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center p-4">
+                        <p className="text-white text-2xl sm:text-4xl text-center">
+                          DETECTION <br />
+                          STOPPED
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Button */}
+                <div className="flex justify-between gap-4 items-end">
+                  <button style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }} disabled={streamMode === 1} className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-lg sm:text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]" onClick={() => setStreamMode(1)}>
+                    <img src={Play} alt="Play" className="w-6 h-6 sm:w-7 sm:h-7 mr-1 inline-block" />
+                    <p>Start</p>
+                  </button>
+                  <button
+                    style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }}
+                    disabled={streamMode === 0 || streamMode === null}
+                    className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-lg sm:text-xl disabled:opacity-50 hover:bg-[#8b2536]"
+                    onClick={() => {
+                      setStreamMode(0);
+                    }}
+                  >
+                    <img src={Stop} alt="Stop" className="w-6 h-6 sm:w-7 sm:h-7 mr-2 inline-block" />
+                    <p>Stop</p>
+                  </button>
+                </div>
               </div>
 
-              <div className="w-1/2 h-[100%] hidden md:block lg:hidden">
+              <div className="flex flex-col gap-4 flex-none min-w-0 md:flex-none">
                 {selectedBoard ? (
-                  <div className="border border-slate-200 p-5 flex justify-center bg-blue-300 rounded-lg pt-10 pb-10 h-100">
-                    <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
+                  <div className="border border-slate-200 p-3 sm:p-5 flex justify-center bg-blue-300 rounded-lg h-auto sm:h-[400px] items-center overflow-x-auto w-full">
+                    <div className="grid grid-cols-3 sm:grid-cols-5 items-center gap-x-2 sm:gap-x-4 gap-y-2 justify-items-center w-full h-full p-3 sm:p-6 bg-white rounded-lg shadow-lg">
                       {itemBoard?.slots?.map((card, i) => {
                         return card?.value ? (
-                          <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
+                          <div key={i}>
+                            <img src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
+                            <p className="text-center text-xs sm:text-sm text-blue-700">{`${i + 1}`}</p>
+                          </div>
                         ) : (
-                          /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
-                          <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
+                          <div key={i}>
+                            <div className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
+                            <p className="text-center text-xs sm:text-sm text-gray-500">{`${i + 1}`}</p>
+                          </div>
                         );
                       })}
                     </div>
@@ -527,35 +526,95 @@ export default function Main() {
               </div>
             </div>
 
-            {/* Button */}
-            <div className="flex justify-between gap-4 items-end">
-              <button style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }} disabled={streamMode === 1} className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]" onClick={() => setStreamMode(1)}>
-                <img src={Play} alt="Play" className="w-7 h-7 mr-1 inline-block" />
-                <p>Start</p>
-              </button>
-              <button
-                style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }}
-                disabled={streamMode === 0 || streamMode === null}
-                className="btn bg-[var(--danger)] text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-xl disabled:opacity-50 hover:bg-[#8b2536]"
-                onClick={() => {
-                  setStreamMode(0);
-                }}
-              >
-                <img src={Stop} alt="Stop" className="w-7 h-7 mr-2 inline-block" />
-                <p>Stop</p>
-              </button>
+            {/* GROUND TRUTH LIST */}
+            <div className="card p-4 sm:p-5 border bg-gray-900 rounded-xl overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6">
+                {/* Detection Column */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#15803d", fontWeight: "bold" }}>
+                    D E T E C T I O N
+                  </h4>
+                  <div className="max-h-64 overflow-y-auto pr-1 scrollbar scrollbar-thumb-gray-600 scrollbar-track-white">
+                    <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-green-700">
+                      {["Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Hearts_5"].map((item, i) => (
+                        <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
+                          {item}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Divider (Horizontal on mobile, Vertical on desktop) */}
+                <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
+
+                {/* Ground Truth Column */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#3b82f6", fontWeight: "bold" }}>
+                    G R O U N D &nbsp; T R U T H
+                  </h4>
+                  <div className="max-h-64 overflow-y-auto pr-1 scrollbar scrollbar-thumb-gray-600 scrollbar-track-white">
+                    <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-blue-700">
+                      {itemBoard.slots
+                        ?.filter((slot) => slot?.value != null)
+                        .map((slot) => slot.value.id)
+                        .map((item, i) => (
+                          <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
+                            {item}
+                          </li>
+                        ))}
+                    </ol>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* INFO  */}
-            <div className="flex flex-col lg:flex-row justify-between gap-4 max-w-screen">
-              <div className="flex-1">
-                {/* CPU Utilization */}
+            {/* Accuracy Metrics & Instance Performance */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="card flex-1">
+                <p className="text-title" style={{ color: "grey" }}>
+                  Accuracy Metrics
+                </p>
+                <div className="flex justify-between mt-2 gap-2 sm:gap-5">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-info">Detection Rate:</p>
+                    <p className="text-info">Avg. Confidence Score:</p>
+                    <p className="text-info">Average Precision:</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-right sm:text-left">
+                    <p className="text-info">80%</p>
+                    <p className="text-info">50%</p>
+                    <p className="text-info">90%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card flex-1">
+                <p className="text-title" style={{ color: "grey" }}>
+                  Instance Performance
+                </p>
+                <div className="flex mt-2 gap-2 sm:gap-5 justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-info">Forward-pass:</p>
+                    <p className="text-info">Inference FPS:</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-right sm:text-left">
+                    <p className="text-info">{forwardPass} ms</p>
+                    <p className="text-info">{inferenceFps} ms</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* INFO - CPU Utilization */}
+            <div className="flex flex-col lg:flex-row justify-between gap-4 w-full">
+              <div className="flex-1 w-full min-w-0">
                 <div className="card w-full h-full rounded-lg shadow-md gap-4">
                   <p className="text-title" style={{ color: "grey" }}>
                     CPU Utilization
                   </p>
                   <p className="text-info mb-4 mt-2">Average: {cpuUtilization?.average}%</p>
-                  <div className="flex gap-8 mb-4">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-4">
                     <div className="gap-2 w-full">
                       <ProgressBar value={cpuUtilization?.core[0]} />
                       <div className="flex justify-between text-sm mt-1">
@@ -571,7 +630,7 @@ export default function Main() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-8">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
                     <div className="gap-2 w-full">
                       <ProgressBar value={cpuUtilization?.core[1]} />
                       <div className="flex justify-between text-sm mt-1">
@@ -590,103 +649,42 @@ export default function Main() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ACCURACY METRICS  */}
-        <div className="flex-none flex flex-col">
-          <div className="flex-col items-end hidden lg:flex">
-            <Dropdown width="w-40" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
-            <div className="h-16 hidden md:block lg:block xl:hidden " />
-          </div>
-
-          <div className="flex flex-col gap-2 mt-4">
-            {selectedBoard ? (
-              <div className="border border-slate-200 p-5 flex md:hidden lg:flex justify-center bg-blue-300 rounded-lg pt-10 pb-10">
-                <div className="grid grid-cols-5 items-center gap-4 justify-items-center w-fit p-6 bg-white rounded-lg shadow-lg">
-                  {itemBoard?.slots?.map((card, i) => {
-                    return card?.value ? (
-                      <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
-                    ) : (
-                      /* Tampilkan kotak kosong kecil yang ukurannya sama (w-7 h-15) */
-                      <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div />
-            )}
-
-            <div className="card">
-              <p className="text-title" style={{ color: "grey" }}>
-                Accuracy Metrics
-              </p>
-              <div className="flex justify-between mt-2 gap-5">
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">Detection Rate:</p>
-                  <p className="text-info">Avg. Confidence Score:</p>
-                  <p className="text-info">Average Precision:</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">80%</p>
-                  <p className="text-info">50%</p>
-                  <p className="text-info">90%</p>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <p className="text-title" style={{ color: "grey" }}>
-                Instance Performance
-              </p>
-              <div className="flex mt-2 gap-5 justify-between">
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">Forward-pass:</p>
-                  <p className="text-info">Inference FPS:</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-info">{forwardPass} ms</p>
-                  <p className="text-info">{inferenceFps} ms</p>
-                </div>
-              </div>
-            </div>
-
-            {/* CPU STATUS  */}
-            <div className="flex-none flex flex-col min-w-75">
-              <div className="flex flex-auto flex-col gap-2">
-                <div className="card">
-                  <p className="text-title" style={{ color: "grey" }}>
-                    CPU Status
-                  </p>
-                  <div className="flex justify-between mt-2 gap-5">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-info">Current Frequency:</p>
-                      <p className="text-info">Temperature:</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-info">{cpuStatus?.frequency}</p>
-                      <p className="text-info">{cpuStatus?.temperature} °C</p>
-                    </div>
+            {/* CPU Status & Config */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="card flex-1">
+                <p className="text-title" style={{ color: "grey" }}>
+                  CPU Status
+                </p>
+                <div className="flex justify-between mt-2 gap-2 sm:gap-5">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-info">Current Frequency:</p>
+                    <p className="text-info">Temperature:</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-right sm:text-left">
+                    <p className="text-info">{cpuStatus?.frequency}</p>
+                    <p className="text-info">{cpuStatus?.temperature} °C</p>
                   </div>
                 </div>
-                <div className="card">
-                  <div className="flex justify-between gap-4">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-subinfo">CPU Governor:</p>
-                      <p className="text-subinfo">Thread Allocation:</p>
-                      <p className="text-subinfo">Core Pinning:</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-subinfo uppercase" style={{ fontWeight: "bold" }}>
-                        {cpu?.governor}
-                      </p>
-                      <p className="text-subinfo" style={{ fontWeight: "bold" }}>
-                        {cpu?.thread}
-                      </p>
-                      <p className="text-subinfo" style={{ fontWeight: "bold" }}>
-                        {cpu?.core?.join(", ")}
-                      </p>
-                    </div>
+              </div>
+
+              <div className="card flex-1">
+                <div className="flex justify-between gap-2 sm:gap-4">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-subinfo">CPU Governor:</p>
+                    <p className="text-subinfo">Thread Allocation:</p>
+                    <p className="text-subinfo">Core Pinning:</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-right sm:text-left">
+                    <p className="text-subinfo uppercase" style={{ fontWeight: "bold" }}>
+                      {cpu?.governor}
+                    </p>
+                    <p className="text-subinfo" style={{ fontWeight: "bold" }}>
+                      {cpu?.thread}
+                    </p>
+                    <p className="text-subinfo" style={{ fontWeight: "bold" }}>
+                      {cpu?.core?.join(", ")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -694,6 +692,7 @@ export default function Main() {
           </div>
         </div>
       </div>
+
       {!!isActionLoading ? <ActionLoading /> : <ModalAlert isOpen={modalConfig.isOpen} type={modalConfig.type} title={modalConfig.title} message={modalConfig.message} confirmText={modalConfig.confirmText} cancelText={modalConfig.cancelText} onClose={closeModal} onConfirm={modalConfig.onConfirm} />}
     </div>
   );

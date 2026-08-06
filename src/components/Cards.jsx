@@ -1,3 +1,8 @@
+import Clubs_A from "../assets/cards/A/Clubs.svg";
+import Diamond_A from "../assets/cards/A/Diamonds.svg";
+import Hearts_A from "../assets/cards/A/Hearts.svg";
+import Spades_A from "../assets/cards/A/Spades.svg";
+
 import Clubs_2 from "../assets/cards/2/Clubs.svg";
 import Diamond_2 from "../assets/cards/2/Diamonds.svg";
 import Hearts_2 from "../assets/cards/2/Hearts.svg";
@@ -59,6 +64,11 @@ import Hearts_K from "../assets/cards/K/Hearts.svg";
 import Spades_K from "../assets/cards/K/Spades.svg";
 
 const CARDS = [
+    { id: "Club_A", img: Clubs_A },
+    { id: "Diamond_A", img: Diamond_A },
+    { id: "Hearts_A", img: Hearts_A },
+    { id: "Spades_A", img: Spades_A },
+
     { id: "Club_2", img: Clubs_2 },
     { id: "Diamond_2", img: Diamond_2 },
     { id: "Hearts_2", img: Hearts_2 },

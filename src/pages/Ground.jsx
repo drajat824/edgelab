@@ -250,12 +250,22 @@ export default function Ground() {
                   </span>
                   <span className="text-subinfo bg-blue-100 text-slate-600 px-1.5 py-0.5 rounded-full font-medium text-center truncate">{totalCards} CARDS</span>
                 </div>
-                <button onClick={() => onSelectedBoard(e)} className={`w-[210px] h-[250px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-white group ${selected ? "shadow-lg shadow-blue-300 -translate-y-1" : "hover:shadow-lg hover:-translate-y-1 transition-all duration-200"}`}>
+                <button onClick={() => onSelectedBoard(e)} className={`w-[210px] rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-white group ${selected ? "shadow-lg shadow-blue-300 -translate-y-1" : "hover:shadow-lg hover:-translate-y-1 transition-all duration-200"}`}>
                   <div className="flex flex-col gap-2">
                     {/* Grid Card */}
-                    <div className={`grid grid-cols-5 gap-4 p-4 ${selected ? "border border-blue-500" : "border border-black-200"} rounded-md h-[250px] items-center justify-items-center bg-white shadow-sm`}>
+                    <div className={`grid grid-cols-5 gap-x-4 gap-y-2 p-4 ${selected ? "border border-blue-500" : "border border-black-200"} rounded-md items-center justify-items-center bg-white shadow-sm`}>
                       {e.slots.map((card, i) => {
-                        return card?.value ? <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" /> : <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />;
+                        return card?.value ? (
+                          <div key={i}>
+                            <img key={i} src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
+                            <p className={`text-center text-xs pt-1 ${!card?.value?.img ? "text-gray-500" : "text-blue-700"}`}>{`${i + 1}`}</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <div key={i} className="w-7 h-15 bg-gray-100 rounded-sm border border-dashed border-gray-300" />
+                           <p className={`text-center text-xs pt-1 ${!card?.value?.img ? "text-gray-500" : "text-blue-700"}`}>{`${i + 1}`}</p>
+                          </div>
+                        );
                       })}
                     </div>
                   </div>
@@ -339,25 +349,46 @@ export default function Ground() {
             <div className="card flex flex-col justify-between" style={{ paddingTop: 30, paddingBottom: 30 }}>
               <div className="grid grid-cols-5 gap-2 p-2 border rounded-lg place-items-center">
                 {draftBoard.slots.map((e, i) => {
+                  let disabled = true;
+
+                  if (e?.id === "slot-0") {
+                    disabled = false;
+                  }
+
+                  if (draftBoard?.slots?.some((slot) => slot.id === `slot-${i - 1}` && slot?.value)) {
+                    disabled = false;
+                  }
+
                   return (
-                    <Droppable
-                      disabled={isSaveDisabled}
-                      isEmpty={!!e.value ? false : true}
-                      key={e.id}
-                      id={e.id}
-                      onMouseDown={() =>
-                        setDraftBoard((prev) => ({
-                          ...prev,
-                          slots: prev.slots.map((s, index) => (index === i ? { ...s, value: null } : s)),
-                        }))
-                      }
-                    >
-                      {e.value && (
-                        <>
-                          <img src={e?.value?.img} alt="Ground" className="w-15 h-15" />
-                        </>
-                      )}
-                    </Droppable>
+                    <div>
+                      <Droppable
+                        disabled={!!isSaveDisabled ? true : disabled}
+                        isEmpty={!e.value}
+                        key={e.id}
+                        id={e.id}
+                        onMouseDown={() =>
+                          setDraftBoard((prev) => {
+                            const currentValues = prev.slots.map((s) => s.value).filter(Boolean);
+                            currentValues.splice(i, 1);
+                            const updatedSlots = prev.slots.map((slot, index) => ({
+                              ...slot,
+                              value: currentValues[index] || null,
+                            }));
+                            return {
+                              ...prev,
+                              slots: updatedSlots,
+                            };
+                          })
+                        }
+                      >
+                        {e.value && (
+                          <>
+                            <img src={e?.value?.img} alt="Ground" className="w-15 h-15" />
+                          </>
+                        )}
+                      </Droppable>
+                      <p className={`text-center text-sm pt-1 ${!e.value ? "text-gray-500" : "text-blue-700"}`}>{`Card ${i + 1}`}</p>
+                    </div>
                   );
                 })}
               </div>
