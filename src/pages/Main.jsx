@@ -527,14 +527,15 @@ export default function Main() {
             </div>
 
             {/* GROUND TRUTH LIST */}
-            <div className="card p-4 sm:p-5 border bg-gray-900 rounded-xl overflow-hidden">
-              <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6">
-                {/* Detection Column */}
-                <div className="flex-1 flex flex-col gap-2">
-                  <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#15803d", fontWeight: "bold" }}>
-                    D E T E C T I O N
-                  </h4>
-                  <div className="max-h-64 overflow-y-auto pr-1 scrollbar scrollbar-thumb-gray-600 scrollbar-track-white">
+            <div className="relative w-full overflow-hidden rounded-lg border border-gray-800 p-4 bg-white">
+              {/* Container scroll pembungkus utama */}
+              <div className="max-h-64 overflow-y-auto pr-3 scrollbar scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6">
+                  {/* Detection Column */}
+                  <div className="flex-1 flex flex-col gap-2">
+                    <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#15803d", fontWeight: "bold" }}>
+                      D E T E C T I O N
+                    </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-green-700">
                       {["Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Hearts_5"].map((item, i) => (
                         <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
@@ -543,18 +544,36 @@ export default function Main() {
                       ))}
                     </ol>
                   </div>
-                </div>
 
-                {/* Divider (Horizontal on mobile, Vertical on desktop) */}
-                <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
+                  {/* Divider */}
+                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
 
-                {/* Ground Truth Column */}
-                <div className="flex-1 flex flex-col gap-2">
-                  <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#3b82f6", fontWeight: "bold" }}>
-                    G R O U N D &nbsp; T R U T H
-                  </h4>
-                  <div className="max-h-64 overflow-y-auto pr-1 scrollbar scrollbar-thumb-gray-600 scrollbar-track-white">
+                  {/* Ground Truth Column */}
+                  <div className="flex-1 flex flex-col gap-2">
+                    <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "#3b82f6", fontWeight: "bold" }}>
+                      G R O U N D &nbsp; T R U T H
+                    </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-blue-700">
+                      {itemBoard.slots
+                        ?.filter((slot) => slot?.value != null)
+                        .map((slot) => slot.value.id)
+                        .map((item, i) => (
+                          <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
+                            {item}
+                          </li>
+                        ))}
+                    </ol>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
+
+                  {/* Status Column */}
+                  <div className="flex-1 flex flex-col gap-2">
+                    <h4 className="text-info border-b border-gray-800 pb-2" style={{ color: "black", fontWeight: "bold" }}>
+                      S T A T U S
+                    </h4>
+                    <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-black">
                       {itemBoard.slots
                         ?.filter((slot) => slot?.value != null)
                         .map((slot) => slot.value.id)
@@ -573,13 +592,13 @@ export default function Main() {
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="card flex-1">
                 <p className="text-title" style={{ color: "grey" }}>
-                  Accuracy Metrics
+                  Metrics
                 </p>
                 <div className="flex justify-between mt-2 gap-2 sm:gap-5">
                   <div className="flex flex-col gap-1">
                     <p className="text-info">Detection Rate:</p>
                     <p className="text-info">Avg. Confidence Score:</p>
-                    <p className="text-info">Average Precision:</p>
+                    <p className="text-info">Precision:</p>
                   </div>
                   <div className="flex flex-col gap-1 text-right sm:text-left">
                     <p className="text-info">80%</p>
