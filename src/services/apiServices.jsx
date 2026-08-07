@@ -140,9 +140,17 @@ const apiServices = {
 
   // VIDEO
 
-  startVideo: async () => {
+  startCalibrate: async () => {
     try {
-      return await apiAi.get("/start");
+      return await apiAi.get("/start-calibrate");
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  startDetection: async () => {
+    try {
+      return await apiAi.get("/start-detection");
     } catch (error) {
       throw error;
     }

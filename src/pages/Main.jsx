@@ -49,7 +49,7 @@ export default function Main() {
   const [models, setModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState(cpu?.selectedModel);
   const [cameraFps, setCameraFps] = useState(cpu?.fpsCamera);
-  const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Start
+  const [streamMode, setStreamMode] = useState(null); // 0: Stop, 1: Detetction, 2: Calibrate
   const [inferenceFps, setInferenceFps] = useState();
   const [forwardPass, setForwardPass] = useState();
   const [cameraError, setCameraError] = useState("");
@@ -159,7 +159,7 @@ export default function Main() {
               dispatch({ type: "CHANGE_FPS_CONFIG", payload: data?.fps_camera });
             }),
             apiServices.stopVideo().then((data) => {
-              if (data?.stream_status === "start") setStreamMode(1);
+              // if (data?.stream_status === "start") setStreamMode(1);
               if (data?.stream_status === "stop") {
                 setStreamMode(0);
               }
@@ -304,10 +304,14 @@ export default function Main() {
       setIsActionLoading(true);
       await withMinimumDelay(async () => {
         try {
-          if (streamMode) {
-            await apiServices.startVideo();
-          } else {
+          if (streamMode === 0) {
             await apiServices.stopVideo();
+          }
+          if (streamMode === 1) {
+            await apiServices.startDetection();
+          }
+          if (streamMode === 2) {
+            await apiServices.startCalibrate();
           }
         } catch (error) {
           setStreamMode(null);
@@ -327,6 +331,7 @@ export default function Main() {
 
     if (streamMode == null) return;
     handleVideoToggle();
+
     return () => {
       apiServices.stopVideo();
     };
@@ -435,6 +440,60 @@ export default function Main() {
     setIsActionLoading(false);
   };
 
+  // NEW FITUR TEST
+
+  const [calibrate, setCalibrate] = useState([]);
+  const handleAddCalibrationPoint = (newPoint) => {
+    if (calibrate.length < 4) {
+      const allPoints = [...calibrate, newPoint];
+      if (allPoints.length === 4) {
+        const sortedByX = [...allPoints].sort((a, b) => a.x - b.x);
+
+        const leftPoints = sortedByX.slice(0, 2).sort((a, b) => a.y - b.y);
+        const topLeft = leftPoints[0];
+        const bottomLeft = leftPoints[1];
+
+        const rightPoints = sortedByX.slice(2, 4).sort((a, b) => a.y - b.y);
+        const topRight = rightPoints[0];
+        const bottomRight = rightPoints[1];
+        setCalibrate([topLeft, bottomLeft, topRight, bottomRight]);
+      } else {
+        setCalibrate(allPoints);
+      }
+    }
+  };
+
+  const imgRef = useRef(null);
+  const FRAME_WIDTH = 660;
+  const FRAME_HEIGHT = 380;
+
+  const handleCalibrationClick = async (e) => {
+    const img = imgRef.current;
+    if (!img) return;
+    const rect = img.getBoundingClientRect();
+    const scale = Math.min(rect.width / FRAME_WIDTH, rect.height / FRAME_HEIGHT);
+    const renderedWidth = FRAME_WIDTH * scale;
+    const renderedHeight = FRAME_HEIGHT * scale;
+
+    // filter padding
+    const offsetX = (rect.width - renderedWidth) / 2;
+    const offsetY = (rect.height - renderedHeight) / 2;
+
+    // koordinat relatif terhadap video
+    const x = e.clientX - rect.left - offsetX;
+    const y = e.clientY - rect.top - offsetY;
+
+    // klik di luar area gambar
+    if (x < 0 || y < 0 || x > renderedWidth || y > renderedHeight) {
+      return;
+    }
+
+    // konversi ke koordinat frame
+    // const frameX = Math.round((x * FRAME_WIDTH) / renderedWidth);
+    // const frameY = Math.round((y * FRAME_HEIGHT) / renderedHeight);
+    handleAddCalibrationPoint({ x: x, y: y });
+  };
+
   if (!!isInitialLoading)
     return (
       <div className="parent overflow-x-hidden">
@@ -456,12 +515,45 @@ export default function Main() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap justify-between mb-4 gap-4">
               <div className="flex flex-row gap-2 w-full sm:w-auto items-center">
-                <Dropdown width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
+                <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
                 <FileInput className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
               </div>
-              <Dropdown width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+              <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
             </div>
-            <Dropdown style={{ top: -10 }} width="w-full sm:w-50" value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+
+            <div className="flex flex-wrap justify-between items-start gap-2">
+              <div className="bg-white border border-blue-100 shadow-sm rounded-xl p-4 max-w-xs">
+                {/* Judul dengan aksen biru */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-center text-blue-600 mb-4">Point Calibration</p>
+
+                {/* Grid Koordinat */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const e = calibrate[i];
+                    const hasValue = e && e.x !== undefined && e.y !== undefined;
+                    return (
+                      <div key={i} className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${hasValue ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-400 border border-dashed border-slate-200"}`}>
+                        <span className="truncate w-15">{hasValue ? `${e.x}, ${e.y}` : `NULL`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Tombol Clear */}
+                <button
+                  style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
+                  disabled={streamMode === 1}
+                  className="w-full py-2 px-4 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+                  onClick={() => {
+                    setCalibrate([]);
+                  }}
+                >
+                  CLEAR
+                </button>
+              </div>
+
+              <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+            </div>
 
             {/* Monitoring Section */}
             <div className="flex flex-col lg:flex-row justify-between gap-4">
@@ -469,7 +561,32 @@ export default function Main() {
                 <div className="flex gap-4">
                   <div className="card-stream w-full h-fit flex items-center justify-center overflow-hidden">
                     {streamMode ? (
-                      <img src={videoUrl} alt="Live Video Feed" className="w-full min-h-[250px] sm:min-h-[365px] object-contain bg-black rounded-lg" />
+                      <div style={{ position: "relative" }}>
+                        <img ref={imgRef} src={videoUrl} alt="Live Video Feed" className="w-full min-h-[250px] sm:min-h-[365px] object-contain bg-black rounded-lg cursor-crosshair" onClick={handleCalibrationClick} />
+                        {calibrate.map((point, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              position: "absolute",
+                              left: `${point.x}px`,
+                              top: `${point.y}px`,
+                              width: "20px",
+                              height: "20px",
+                              backgroundColor: "#1e3a8a",
+                              borderRadius: "50%",
+                              pointerEvents: "none",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "15px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {index + 1}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className="min-h-[250px] sm:min-h-[365px] w-full bg-black rounded-lg flex items-center justify-center p-4">
                         <p className="text-white text-2xl sm:text-4xl text-center">
@@ -483,9 +600,19 @@ export default function Main() {
 
                 {/* Button */}
                 <div className="flex justify-between gap-4 items-end">
-                  <button style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }} disabled={streamMode === 1} className="btn-primary text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-lg sm:text-xl disabled:opacity-50 hover:bg-[var(--primary-hover)]" onClick={() => setStreamMode(1)}>
-                    <img src={Play} alt="Play" className="w-6 h-6 sm:w-7 sm:h-7 mr-1 inline-block" />
-                    <p>Start</p>
+                  <button
+                    style={{ cursor: (streamMode === 2 && calibrate.length < 4) || streamMode === 1 ? "not-allowed" : "pointer" }}
+                    disabled={(streamMode === 2 && calibrate.length < 4) || streamMode === 1}
+                    className={`text-white px-4 py-2 rounded-lg flex items-center justify-center w-full text-lg sm:text-xl disabled:opacity-50 ${calibrate.length === 4 ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-900"}`}
+                    onClick={() => {
+                      if (calibrate.length === 4) {
+                        setStreamMode(1);
+                      } else {
+                        setStreamMode(2);
+                      }
+                    }}
+                  >
+                    <p>{calibrate.length === 4 ? "D E T E C T I O N" : "C A L I B R A T E"}</p>
                   </button>
                   <button
                     style={{ cursor: streamMode === 0 || streamMode === null ? "not-allowed" : "pointer" }}
@@ -495,8 +622,8 @@ export default function Main() {
                       setStreamMode(0);
                     }}
                   >
-                    <img src={Stop} alt="Stop" className="w-6 h-6 sm:w-7 sm:h-7 mr-2 inline-block" />
-                    <p>Stop</p>
+                    {/* <img src={Stop} alt="Stop" className="w-6 h-6 sm:w-7 sm:h-7 mr-2 inline-block" /> */}
+                    <p>S T O P</p>
                   </button>
                 </div>
               </div>
