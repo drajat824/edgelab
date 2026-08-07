@@ -442,7 +442,24 @@ export default function Main() {
 
   // NEW FITUR TEST
 
-  const [calibrate, setCalibrate] = useState([]);
+  const [calibrate, setCalibrate] = useState(() => {
+    try {
+      const saved = localStorage.getItem("calibration_points");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Gagal memuat calibration points dari localStorage:", error);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("calibration_points", JSON.stringify(calibrate));
+    } catch (error) {
+      console.error("Gagal menyimpan calibration points ke localStorage:", error);
+    }
+  }, [calibrate]);
+
   const handleAddCalibrationPoint = (newPoint) => {
     if (calibrate.length < 4) {
       const allPoints = [...calibrate, newPoint];
@@ -456,7 +473,9 @@ export default function Main() {
         const rightPoints = sortedByX.slice(2, 4).sort((a, b) => a.y - b.y);
         const topRight = rightPoints[0];
         const bottomRight = rightPoints[1];
-        setCalibrate([topLeft, bottomLeft, topRight, bottomRight]);
+
+        const sortedPoints = [topLeft, bottomLeft, topRight, bottomRight];
+        setCalibrate(sortedPoints);
       } else {
         setCalibrate(allPoints);
       }
