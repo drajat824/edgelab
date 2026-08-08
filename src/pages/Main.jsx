@@ -499,8 +499,8 @@ export default function Main() {
     const offsetY = (rect.height - renderedHeight) / 2;
 
     // koordinat relatif terhadap video
-    const x = e.clientX - rect.left - offsetX;
-    const y = e.clientY - rect.top - offsetY;
+    const x = e.clientX - rect.left - offsetX - 1.2;
+    const y = e.clientY - rect.top - offsetY - 10;
 
     // klik di luar area gambar
     if (x < 0 || y < 0 || x > renderedWidth || y > renderedHeight) {
@@ -532,51 +532,76 @@ export default function Main() {
         <div className="flex flex-col flex-1 w-full min-w-0">
           {/* CHILD  */}
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap justify-between mb-4 gap-4">
+            <div className="flex flex-wrap mb-4 gap-4 justify-between items-start">
               <div className="flex flex-row gap-2 w-full sm:w-auto items-center">
                 <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
                 <FileInput className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
               </div>
-              <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
-            </div>
 
-            <div className="flex flex-wrap justify-between items-start gap-2">
-              <div className="bg-white border border-blue-100 shadow-sm rounded-xl p-4 max-w-xs">
-                {/* Judul dengan aksen biru */}
-                <p className="text-xs font-semibold uppercase tracking-wider text-center text-blue-600 mb-4">Point Calibration</p>
-
-                {/* Grid Koordinat */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {Array.from({ length: 4 }).map((_, i) => {
-                    const e = calibrate[i];
-                    const hasValue = e && e.x !== undefined && e.y !== undefined;
-                    return (
-                      <div key={i} className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${hasValue ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-400 border border-dashed border-slate-200"}`}>
-                        <span className="truncate w-15">{hasValue ? `${e.x}, ${e.y}` : `NULL`}</span>
-                      </div>
-                    );
-                  })}
+              {/* <div className="bg-white border border-blue-100 shadow-sm rounded-xl p-4 max-w-xs">
+                <div className="grid grid-cols-3 gap-2 items-stretch">
+                  <div className="col-span-2 grid grid-cols-2 gap-2">
+                    {Array.from({ length: 4 }).map((_, i) => {
+                      const e = calibrate[i];
+                      const hasValue = e && e.x !== undefined && e.y !== undefined;
+                      return (
+                        <div key={i} className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${hasValue ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-400 border border-dashed border-slate-200"}`}>
+                          <span className="truncate w-15">{hasValue ? `${e.x}, ${e.y}` : `NULL`}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
+                    disabled={streamMode === 1}
+                    className="w-full py-2 px-3 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+                    onClick={() => {
+                      setCalibrate([]);
+                    }}
+                  >
+                    CLEAR
+                  </button>
                 </div>
+              </div> */}
 
-                {/* Tombol Clear */}
-                <button
-                  style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
-                  disabled={streamMode === 1}
-                  className="w-full py-2 px-4 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
-                  onClick={() => {
-                    setCalibrate([]);
-                  }}
-                >
-                  CLEAR
-                </button>
-              </div>
+              <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
 
-              <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+              {/* <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} /> */}
             </div>
+
+            {/* <div className="flex flex-wrap justify-between items-start gap-2"> */}
+            {/* <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} /> */}
+            {/* </div> */}
 
             {/* Monitoring Section */}
             <div className="flex flex-col lg:flex-row justify-between gap-4">
               <div className="flex flex-col gap-4 flex-1 w-full min-w-0">
+                <div className="bg-white border border-blue-100 shadow-sm rounded-xl p-4 max-w-xs">
+                  <div className="grid grid-cols-3 gap-2 items-stretch">
+                    <div className="col-span-2 grid grid-cols-2 gap-2">
+                      {Array.from({ length: 4 }).map((_, i) => {
+                        const e = calibrate[i];
+                        const hasValue = e && e.x !== undefined && e.y !== undefined;
+                        return (
+                          <div key={i} className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${hasValue ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-400 border border-dashed border-slate-200"}`}>
+                            <span className="truncate w-15">{hasValue ? `${e.x}, ${e.y}` : `NULL`}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
+                      disabled={streamMode === 1}
+                      className="w-full py-2 px-3 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+                      onClick={() => {
+                        setCalibrate([]);
+                      }}
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex gap-4">
                   <div className="card-stream w-full h-fit flex items-center justify-center overflow-hidden">
                     {streamMode ? (
@@ -648,6 +673,7 @@ export default function Main() {
               </div>
 
               <div className="flex flex-col gap-4 flex-none min-w-0 md:flex-none">
+                <Dropdown disabled={streamMode === 2} width="mt-0 lg:mt-14 w-40 self-end" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
                 {selectedBoard ? (
                   <div className="border border-slate-200 p-3 sm:p-5 flex justify-center bg-blue-300 rounded-lg h-auto sm:h-[400px] items-center overflow-x-auto w-full">
                     <div className="grid grid-cols-3 sm:grid-cols-5 items-center gap-x-2 sm:gap-x-4 gap-y-2 justify-items-center w-full h-full p-3 sm:p-6 bg-white rounded-lg shadow-lg">
