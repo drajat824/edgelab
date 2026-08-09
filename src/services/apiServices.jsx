@@ -148,9 +148,12 @@ const apiServices = {
     }
   },
 
-  startDetection: async () => {
+  startDetection: async ({ calibration_points }) => {
+    console.log(calibration_points);
     try {
-      return await apiAi.get("/start-detection");
+      return await apiAi.post("/start-detection", {
+        calibration_points: calibration_points,
+      });
     } catch (error) {
       throw error;
     }
@@ -199,6 +202,24 @@ const apiServices = {
   deleteGT: async ({ board_id }) => {
     try {
       return await apiAi.delete(`/api/gt/${board_id}`);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  activeGT: async (boardId) => {
+    try {
+      return await apiAi.post("/api/gt/active-board", {
+        active_board: boardId,
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getActiveGT: async () => {
+    try {
+      return await apiAi.get("/api/gt/active-board");
     } catch (error) {
       throw error;
     }

@@ -93,7 +93,7 @@ export default function Main() {
 
         // Auto select board pertama jika belum ada yang terpilih
         if (response.data.length > 0 && !selectedBoard) {
-          setSelectedBoard(response.data[0]?.board_name);
+          setSelectedBoard(response.data[0]?.board_id);
         }
       }
     } catch (error) {
@@ -171,6 +171,11 @@ export default function Main() {
             }),
             // Sync Boards GT Data
             fetchBoards(),
+
+            // Sync Active Ground Truth Board
+            apiServices.getActiveGT().then((data) => {
+              setSelectedBoard(data?.data);
+            }),
           ]);
         } catch (err) {
           console.error("Initial Sync Error:", err);
@@ -214,7 +219,7 @@ export default function Main() {
   // Match Selected Evaluation Board with Local Reference JSON Data
   useEffect(() => {
     if (!boards || !selectedBoard) return;
-    const targetBoard = boards?.find((e) => e.board_name === selectedBoard);
+    const targetBoard = boards?.find((e) => e.board_id === selectedBoard);
 
     if (targetBoard) {
       const transformedBoard = {
@@ -308,7 +313,7 @@ export default function Main() {
             await apiServices.stopVideo();
           }
           if (streamMode === 1) {
-            await apiServices.startDetection();
+            await apiServices.startDetection({ calibration_points: calibrate });
           }
           if (streamMode === 2) {
             await apiServices.startCalibrate();
@@ -440,6 +445,39 @@ export default function Main() {
     setIsActionLoading(false);
   };
 
+  const selectedBoardObj = boards?.find((board) => board.board_id === selectedBoard);
+  const selectedBoardName = selectedBoardObj ? selectedBoardObj.board_name : null;
+
+  const onChangeGT = async (selectedBoardName) => {
+    const selectedBoardObj = boards?.find((board) => board.board_name === selectedBoardName);
+    if (!selectedBoardObj) return;
+
+    const boardId = selectedBoardObj.board_id;
+
+    // Jika board yang dipilih sama dengan state yang sedang aktif, langsung return
+    if (boardId === selectedBoard) return;
+
+    await withMinimumDelay(async () => {
+      try {
+        const response = await apiServices.activeGT(boardId);
+
+        if (response?.status === "success" || response?.status === 200 || response?.ok) {
+          setSelectedBoard(boardId);
+        }
+      } catch (error) {
+        setModalConfig({
+          isOpen: true,
+          type: "warning",
+          title: "Update Failed",
+          message: error?.response?.data?.detail || error?.message || "Failed to change active board.",
+          confirmText: "OK",
+          cancelText: "",
+          onConfirm: closeModal,
+        });
+      }
+    }, 400);
+  };
+
   // NEW FITUR TEST
 
   const [calibrate, setCalibrate] = useState(() => {
@@ -451,6 +489,8 @@ export default function Main() {
       return [];
     }
   });
+
+  console.log(calibrate);
 
   useEffect(() => {
     try {
@@ -474,7 +514,7 @@ export default function Main() {
         const topRight = rightPoints[0];
         const bottomRight = rightPoints[1];
 
-        const sortedPoints = [topLeft, bottomLeft, topRight, bottomRight];
+        const sortedPoints = [topLeft, topRight, bottomRight, bottomLeft];
         setCalibrate(sortedPoints);
       } else {
         setCalibrate(allPoints);
@@ -499,8 +539,11 @@ export default function Main() {
     const offsetY = (rect.height - renderedHeight) / 2;
 
     // koordinat relatif terhadap video
-    const x = e.clientX - rect.left - offsetX - 1.2;
-    const y = e.clientY - rect.top - offsetY - 10;
+    // const x = e.clientX - rect.left - offsetX - 1.2;
+    // const y = e.clientY - rect.top - offsetY - 10;
+
+    const x = e.clientX - rect.left - offsetX + 8;
+    const y = e.clientY - rect.top - offsetY;
 
     // klik di luar area gambar
     if (x < 0 || y < 0 || x > renderedWidth || y > renderedHeight) {
@@ -510,6 +553,7 @@ export default function Main() {
     // konversi ke koordinat frame
     // const frameX = Math.round((x * FRAME_WIDTH) / renderedWidth);
     // const frameY = Math.round((y * FRAME_HEIGHT) / renderedHeight);
+
     handleAddCalibrationPoint({ x: x, y: y });
   };
 
@@ -537,41 +581,8 @@ export default function Main() {
                 <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
                 <FileInput className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
               </div>
-
-              {/* <div className="bg-white border border-blue-100 shadow-sm rounded-xl p-4 max-w-xs">
-                <div className="grid grid-cols-3 gap-2 items-stretch">
-                  <div className="col-span-2 grid grid-cols-2 gap-2">
-                    {Array.from({ length: 4 }).map((_, i) => {
-                      const e = calibrate[i];
-                      const hasValue = e && e.x !== undefined && e.y !== undefined;
-                      return (
-                        <div key={i} className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${hasValue ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-400 border border-dashed border-slate-200"}`}>
-                          <span className="truncate w-15">{hasValue ? `${e.x}, ${e.y}` : `NULL`}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <button
-                    style={{ cursor: streamMode === 1 ? "not-allowed" : "pointer" }}
-                    disabled={streamMode === 1}
-                    className="w-full py-2 px-3 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
-                    onClick={() => {
-                      setCalibrate([]);
-                    }}
-                  >
-                    CLEAR
-                  </button>
-                </div>
-              </div> */}
-
               <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
-
-              {/* <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} /> */}
             </div>
-
-            {/* <div className="flex flex-wrap justify-between items-start gap-2"> */}
-            {/* <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} /> */}
-            {/* </div> */}
 
             {/* Monitoring Section */}
             <div className="flex flex-col lg:flex-row justify-between gap-4">
@@ -614,8 +625,9 @@ export default function Main() {
                               position: "absolute",
                               left: `${point.x}px`,
                               top: `${point.y}px`,
-                              width: "20px",
-                              height: "20px",
+                              transform: "translate(-50%, -50%)",
+                              width: "15px",
+                              height: "15px",
                               backgroundColor: "#1e3a8a",
                               borderRadius: "50%",
                               pointerEvents: "none",
@@ -623,7 +635,7 @@ export default function Main() {
                               alignItems: "center",
                               justifyContent: "center",
                               color: "white",
-                              fontSize: "15px",
+                              fontSize: "10px",
                               fontWeight: "bold",
                             }}
                           >
@@ -666,14 +678,13 @@ export default function Main() {
                       setStreamMode(0);
                     }}
                   >
-                    {/* <img src={Stop} alt="Stop" className="w-6 h-6 sm:w-7 sm:h-7 mr-2 inline-block" /> */}
                     <p>S T O P</p>
                   </button>
                 </div>
               </div>
 
               <div className="flex flex-col gap-4 flex-none min-w-0 md:flex-none">
-                <Dropdown disabled={streamMode === 2} width="mt-0 lg:mt-14 w-40 self-end" value={selectedBoard || null} options={boards?.map((e) => e.board_name) || []} onChange={(e) => setSelectedBoard(e)} />
+                <Dropdown disabled={streamMode === 2} width="mt-0 lg:mt-14 w-40 self-end" value={selectedBoardName} options={boards?.map((e) => e.board_name) || []} onChange={onChangeGT} />
                 {selectedBoard ? (
                   <div className="border border-slate-200 p-3 sm:p-5 flex justify-center bg-blue-300 rounded-lg h-auto sm:h-[400px] items-center overflow-x-auto w-full">
                     <div className="grid grid-cols-3 sm:grid-cols-5 items-center gap-x-2 sm:gap-x-4 gap-y-2 justify-items-center w-full h-full p-3 sm:p-6 bg-white rounded-lg shadow-lg">
