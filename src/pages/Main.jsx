@@ -54,6 +54,7 @@ export default function Main() {
   const [forwardPass, setForwardPass] = useState();
   const [cameraError, setCameraError] = useState("");
   const [file, setFile] = useState(null);
+  const [evaluationData, setEvaluationData] = useState([]);
 
   // Ground Truth Evaluation Board Targets
   const [itemBoard, setItemBoard] = useState({});
@@ -269,6 +270,7 @@ export default function Main() {
         const data = JSON.parse(event.data);
         const rawFps = Number(data?.inference_fps) || 0;
         const rawForwardPass = Number(data?.forward_pass_ms) || 0;
+        const evaluation = data?.evaluation;
 
         if (data?.camera_error !== null) {
           setCameraError(data?.camera_error);
@@ -276,6 +278,7 @@ export default function Main() {
 
         setInferenceFps((prev) => Number(rawFps.toFixed(2)));
         setForwardPass((prev) => Number(rawForwardPass.toFixed(2)));
+        setEvaluationData(evaluation);
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
       }
@@ -489,8 +492,6 @@ export default function Main() {
       return [];
     }
   });
-
-  console.log(calibrate);
 
   useEffect(() => {
     try {
@@ -709,6 +710,9 @@ export default function Main() {
               </div>
             </div>
 
+            {/* Asumsi `evaluationData` adalah objek JSON dari WebSocket/State */}
+            {/* Contoh pembacaan: const evaluationData = dataWs?.evaluation; */}
+
             {/* GROUND TRUTH LIST */}
             <div className="relative w-full overflow-hidden rounded-lg border border-gray-800 p-4 bg-white">
               {/* Container scroll pembungkus utama */}
@@ -720,16 +724,20 @@ export default function Main() {
                       D E T E C T I O N
                     </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-green-700">
-                      {["Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Spades_2", "Hearts_5", "Diamonds_10", "Hearts_5"].map((item, i) => (
-                        <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
-                          {item}
-                        </li>
-                      ))}
+                      {evaluationData?.slot_details?.map((slot) => {
+                        const textColorClass = slot.is_correct ? "text-green-600" : "text-red-600";
+                        return (
+                          <li key={slot.slot} className={`p-1.5 rounded hover:bg-gray-100 font-mono transition ${textColorClass}`}>
+                            {slot.detection ?? "-"}
+                            <span className="opacity-75 text-[10px] ml-1">({(slot.confidence * 100).toFixed(2)}%)</span>
+                          </li>
+                        );
+                      })}
                     </ol>
                   </div>
 
                   {/* Divider */}
-                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
+                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-200 self-stretch" />
 
                   {/* Ground Truth Column */}
                   <div className="flex-1 flex flex-col gap-2">
@@ -737,19 +745,16 @@ export default function Main() {
                       G R O U N D &nbsp; T R U T H
                     </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-blue-700">
-                      {itemBoard.slots
-                        ?.filter((slot) => slot?.value != null)
-                        .map((slot) => slot.value.id)
-                        .map((item, i) => (
-                          <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
-                            {item}
-                          </li>
-                        ))}
+                      {evaluationData?.slot_details?.map((slot) => (
+                        <li key={slot.slot} className="p-1.5 rounded hover:bg-gray-100 font-mono transition">
+                          {slot.ground_truth ?? "-"}
+                        </li>
+                      ))}
                     </ol>
                   </div>
 
                   {/* Divider */}
-                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-800 self-stretch" />
+                  <div className="h-px w-full sm:h-auto sm:w-px bg-gray-200 self-stretch" />
 
                   {/* Status Column */}
                   <div className="flex-1 flex flex-col gap-2">
@@ -757,14 +762,11 @@ export default function Main() {
                       S T A T U S
                     </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-black">
-                      {itemBoard.slots
-                        ?.filter((slot) => slot?.value != null)
-                        .map((slot) => slot.value.id)
-                        .map((item, i) => (
-                          <li key={i} className="p-1.5 rounded hover:bg-gray-800/50 font-mono transition">
-                            {item}
-                          </li>
-                        ))}
+                      {evaluationData?.slot_details?.map((slot) => (
+                        <li key={slot.slot} className="p-1.5 rounded hover:bg-gray-100 font-mono transition">
+                          <span className={`font-bold ${slot.is_correct ? "text-green-600" : "text-red-600"}`}>{slot.is_correct ? "CORRECT" : "WRONG"}</span>
+                        </li>
+                      ))}
                     </ol>
                   </div>
                 </div>
@@ -772,7 +774,7 @@ export default function Main() {
             </div>
 
             {/* Accuracy Metrics & Instance Performance */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4">
               <div className="card flex-1">
                 <p className="text-title" style={{ color: "grey" }}>
                   Metrics
@@ -783,10 +785,10 @@ export default function Main() {
                     <p className="text-info">Avg. Confidence Score:</p>
                     <p className="text-info">Precision:</p>
                   </div>
-                  <div className="flex flex-col gap-1 text-right sm:text-left">
-                    <p className="text-info">80%</p>
-                    <p className="text-info">50%</p>
-                    <p className="text-info">90%</p>
+                  <div className="flex flex-col gap-1 text-right sm:text-left font-mono">
+                    <p className="text-info">{evaluationData?.metrics?.detection_rate != null ? `${Number(evaluationData.metrics.detection_rate).toFixed(2)}%` : "-"}</p>
+                    <p className="text-info">{evaluationData?.metrics?.avg_confidence != null ? `${(Number(evaluationData.metrics.avg_confidence) * 100).toFixed(2)}%` : "-"}</p>
+                    <p className="text-info">{evaluationData?.metrics?.precision != null ? `${Number(evaluationData.metrics.precision).toFixed(2)}%` : "-"}</p>
                   </div>
                 </div>
               </div>
@@ -800,9 +802,9 @@ export default function Main() {
                     <p className="text-info">Forward-pass:</p>
                     <p className="text-info">Inference FPS:</p>
                   </div>
-                  <div className="flex flex-col gap-1 text-right sm:text-left">
-                    <p className="text-info">{forwardPass} ms</p>
-                    <p className="text-info">{inferenceFps} ms</p>
+                  <div className="flex flex-col gap-1 text-right sm:text-left font-mono">
+                    <p className="text-info">{forwardPass != null ? `${Number(forwardPass).toFixed(2)} ms` : "-"}</p>
+                    <p className="text-info">{inferenceFps != null ? `${Number(inferenceFps).toFixed(2)} FPS` : "-"}</p>
                   </div>
                 </div>
               </div>
