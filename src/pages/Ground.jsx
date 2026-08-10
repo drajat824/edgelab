@@ -55,8 +55,8 @@ export default function Ground() {
   };
 
   // 2. Computed Values & Form Validations
-  const isBoardEmpty = draftBoard?.slots?.every((slot) => slot.value === null) || !draftBoard?.name?.trim();
-  const isNameSame = displayBoards?.some((board) => board.name.trim().toLowerCase() === draftBoard?.name?.trim().toLowerCase() && board.id !== draftBoard?.id);
+  const isBoardEmpty = draftBoard?.slots?.every((slot) => slot.value === null);
+  const isNameSame = displayBoards?.some((board) => board.name.trim().toLowerCase() === draftBoard?.name?.trim().toLowerCase() && board.id !== draftBoard?.id) || draftBoard?.name?.toUpperCase() == 'NONE';
   const isSaveDisabled = !draftBoard?.id?.trim() || !draftBoard?.name?.trim();
 
   // 3. Helper Functions
@@ -396,7 +396,7 @@ export default function Ground() {
                 <p className="text-info" style={{ fontWeight: "bold" }}>
                   Board Name
                 </p>
-                <TextInput disabled={isSaveDisabled} value={draftBoard?.name} placeholder="Input board name" onChange={(e) => setDraftBoard((p) => ({ ...p, name: e.target.value }))} />
+                <TextInput disabled={isBoardEmpty} value={draftBoard?.name} placeholder="Input board name" onChange={(e) => setDraftBoard((p) => ({ ...p, name: e.target.value }))} />
                 <div className="flex justify-between gap-4">
                   <button
                     className="btn btn-primary text-white flex-1 disabled:bg-gray-300"

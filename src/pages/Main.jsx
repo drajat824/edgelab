@@ -219,7 +219,20 @@ export default function Main() {
 
   // Match Selected Evaluation Board with Local Reference JSON Data
   useEffect(() => {
-    if (!boards || !selectedBoard) return;
+    if (!selectedBoard) return;
+
+    // 1. Penanganan khusus jika selectedBoard bernilai 'NONE'
+    if (selectedBoard === "NONE") {
+      setItemBoard({
+        id: "NONE",
+        name: "NONE",
+        slots: [], // Mengosongkan data slots agar tidak ada itemboard yang tampil
+      });
+      return;
+    }
+
+    // 2. Penanganan normal untuk board biasa
+    if (!boards) return;
     const targetBoard = boards?.find((e) => e.board_id === selectedBoard);
 
     if (targetBoard) {
@@ -263,7 +276,6 @@ export default function Main() {
   // Model Pipeline: Inference
   useEffect(() => {
     const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
-    ws.onopen = () => console.log("Connected to Inference WS");
 
     ws.onmessage = (event) => {
       try {
@@ -449,15 +461,19 @@ export default function Main() {
   };
 
   const selectedBoardObj = boards?.find((board) => board.board_id === selectedBoard);
-  const selectedBoardName = selectedBoardObj ? selectedBoardObj.board_name : null;
+  const selectedBoardName = selectedBoard === "NONE" ? "NONE" : selectedBoardObj ? selectedBoardObj.board_name : null;
 
   const onChangeGT = async (selectedBoardName) => {
-    const selectedBoardObj = boards?.find((board) => board.board_name === selectedBoardName);
-    if (!selectedBoardObj) return;
+    let boardId;
 
-    const boardId = selectedBoardObj.board_id;
+    if (selectedBoardName === "NONE") {
+      boardId = "NONE";
+    } else {
+      const selectedBoardObj = boards?.find((board) => board.board_name === selectedBoardName);
+      if (!selectedBoardObj) return;
+      boardId = selectedBoardObj.board_id;
+    }
 
-    // Jika board yang dipilih sama dengan state yang sedang aktif, langsung return
     if (boardId === selectedBoard) return;
 
     await withMinimumDelay(async () => {
@@ -667,6 +683,7 @@ export default function Main() {
                       } else {
                         setStreamMode(2);
                       }
+                      setEvaluationData([])
                     }}
                   >
                     <p>{calibrate.length === 4 ? "D E T E C T I O N" : "C A L I B R A T E"}</p>
@@ -685,14 +702,18 @@ export default function Main() {
               </div>
 
               <div className="flex flex-col gap-4 flex-none min-w-0 md:flex-none">
-                <Dropdown disabled={streamMode === 2} width="mt-0 lg:mt-14 w-40 self-end" value={selectedBoardName} options={boards?.map((e) => e.board_name) || []} onChange={onChangeGT} />
+                <Dropdown disabled={streamMode === 2} width="mt-0 lg:mt-14 w-40 self-end" value={selectedBoardName} options={["NONE", ...(boards?.map((e) => e.board_name) || [])]} onChange={onChangeGT} />
+
                 {selectedBoard ? (
                   <div className="border border-slate-200 p-3 sm:p-5 flex justify-center bg-blue-300 rounded-lg h-auto sm:h-[400px] items-center overflow-x-auto w-full">
                     <div className="grid grid-cols-3 sm:grid-cols-5 items-center gap-x-2 sm:gap-x-4 gap-y-2 justify-items-center w-full h-full p-3 sm:p-6 bg-white rounded-lg shadow-lg">
-                      {itemBoard?.slots?.map((card, i) => {
+                      {(itemBoard?.slots?.length > 0 ? itemBoard.slots : Array.from({ length: 15 }, (_, index) => ({ value: null }))).map((card, i) => {
                         return card?.value ? (
                           <div key={i}>
-                            <img src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain" />
+                            <div className="relative group flex justify-center items-center">
+                              <img src={card?.value?.img} alt="Ground" className="w-7 h-15 object-contain cursor-pointer transition-transform hover:scale-105" />
+                              {card?.value?.id && <span className="absolute bottom-full mb-1 hidden group-hover:flex items-center justify-center px-2 py-1 text-sm font-mono font-semibold text-white bg-gray-900/90 rounded shadow-md whitespace-nowrap z-20 pointer-events-none transition-all">{card.value.id}</span>}
+                            </div>
                             <p className="text-center text-xs sm:text-sm text-blue-700">{`${i + 1}`}</p>
                           </div>
                         ) : (
@@ -725,7 +746,7 @@ export default function Main() {
                     </h4>
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-green-700">
                       {evaluationData?.slot_details?.map((slot) => {
-                        const textColorClass = slot.is_correct ? "text-green-600" : "text-red-600";
+                        const textColorClass = slot.is_correct === true ? "text-green-600" : slot.is_correct === false ? "text-red-600" : "text-gray-700";
                         return (
                           <li key={slot.slot} className={`p-1.5 rounded hover:bg-gray-100 font-mono transition ${textColorClass}`}>
                             {slot.detection ?? "-"}
@@ -764,7 +785,7 @@ export default function Main() {
                     <ol className="list-decimal list-inside space-y-1.5 text-subinfo text-xs marker:font-bold marker:text-black">
                       {evaluationData?.slot_details?.map((slot) => (
                         <li key={slot.slot} className="p-1.5 rounded hover:bg-gray-100 font-mono transition">
-                          <span className={`font-bold ${slot.is_correct ? "text-green-600" : "text-red-600"}`}>{slot.is_correct ? "CORRECT" : "WRONG"}</span>
+                          {slot.is_correct !== null && slot.is_correct !== undefined ? <span className={`font-bold ${slot.is_correct ? "text-green-600" : "text-red-600"}`}>{slot.is_correct ? "CORRECT" : "WRONG"}</span> : <span className="text-gray-400">-</span>}
                         </li>
                       ))}
                     </ol>
