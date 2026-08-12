@@ -25,11 +25,6 @@ export default function BreakpointLogger() {
       const currentBreakpoint = getBreakpoint(currentWidth);
 
       setWindowWidth(currentWidth);
-
-      // Lakukan console.log setiap kali ukuran layar / zoom berubah
-      console.log(
-        `[ZOOM/RESIZE] Width: ${currentWidth}px | Active Breakpoint: ${currentBreakpoint.toUpperCase()}`
-      );
     };
 
     // Daftarkan event listener saat komponen dipasang

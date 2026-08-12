@@ -252,24 +252,28 @@ export default function Main() {
   // Telemetry Pipeline: CPU Utilization Multicore Core Bars
   useEffect(() => {
     const ws = new WebSocket(`${import.meta.env.VITE_API}/ws/utilization`);
-    ws.onopen = () => console.log("Connected to Utilization WS");
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setCpuUtilization(data);
     };
-    ws.onclose = () => console.log("Disconnected from Utilization WS");
-    return () => ws.close();
+    return () => {
+      ws.close();
+      ws.onerror = null;
+      ws.onclose = null;
+    };
   }, []);
 
   // Telemetry Pipeline: Hardware Thermal & Core Clock Speed Frequencies
   useEffect(() => {
     const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/metrics`);
-    wsStatus.onopen = () => console.log("Connected to Status WS");
+    wsStatus.onerror = () => {};
+
+    wsStatus.onclose = () => {};
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setCpuStatus(data);
     };
-    wsStatus.onclose = () => console.log("Disconnected from Status WS");
     return () => wsStatus.close();
   }, []);
 
@@ -281,6 +285,9 @@ export default function Main() {
     }
 
     const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
+    ws.onerror = () => {};
+
+    ws.onclose = () => {};
 
     ws.onmessage = (event) => {
       try {

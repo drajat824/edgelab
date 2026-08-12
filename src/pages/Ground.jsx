@@ -237,7 +237,7 @@ export default function Ground() {
             const totalCards = e?.slots?.filter((slot) => slot?.value).length || 0;
             let selected = e?.id == draftBoard?.id ? true : false;
             return (
-              <div className="flex flex-col gap-3 justify-center items-center">
+              <div key={i} className="flex flex-col gap-3 justify-center items-center">
                 <div className="flex items-center justify-between px-1 border-none w-[200px]">
                   <span
                     className="text-subinfo uppercase truncate"
@@ -360,7 +360,7 @@ export default function Ground() {
                   }
 
                   return (
-                    <div>
+                    <div key={i}>
                       <Droppable
                         disabled={!!isSaveDisabled ? true : disabled}
                         isEmpty={!e.value}

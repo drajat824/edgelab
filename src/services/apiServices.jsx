@@ -149,7 +149,6 @@ const apiServices = {
   },
 
   startDetection: async ({ calibration_points }) => {
-    console.log(calibration_points);
     try {
       return await apiAi.post("/start-detection", {
         calibration_points: calibration_points,

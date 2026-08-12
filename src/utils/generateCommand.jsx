@@ -130,8 +130,6 @@ function generateUserspace({ status, tunable, governor }) {
   const output = [];
   const config = tunable?.[governor];
 
-  console.log(config);
-
   if (status[governor]?.fixedFrequency && config?.fixedFrequency) {
     output.push({
       label: "Fixed Frequency",
