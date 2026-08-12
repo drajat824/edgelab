@@ -93,9 +93,9 @@ export default function Main() {
         dispatchGround({ type: "SET_BOARDS", payload: response.data });
 
         // Auto select board pertama jika belum ada yang terpilih
-        if (response.data.length > 0 && !selectedBoard) {
-          setSelectedBoard(response.data[0]?.board_id);
-        }
+        // if (response.data.length > 0 && !selectedBoard) {
+        //   setSelectedBoard(response.data[0]?.board_id);
+        // }
       }
     } catch (error) {
       console.error("Failed to fetch boards:", error);
@@ -275,6 +275,11 @@ export default function Main() {
 
   // Model Pipeline: Inference
   useEffect(() => {
+    // 💡 TAHAN WEBSOCKET: Jangan konek jika streamMode bernilai 0 (Stop) atau null (Belum siap)
+    if (streamMode === 0 || streamMode === null) {
+      return;
+    }
+
     const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
 
     ws.onmessage = (event) => {
@@ -284,23 +289,29 @@ export default function Main() {
         const rawForwardPass = Number(data?.forward_pass_ms) || 0;
         const evaluation = data?.evaluation;
 
-        if (data?.camera_error !== null) {
+        if (data?.camera_error !== null && data?.camera_error !== undefined) {
           setCameraError(data?.camera_error);
         }
 
-        setInferenceFps((prev) => Number(rawFps.toFixed(2)));
-        setForwardPass((prev) => Number(rawForwardPass.toFixed(2)));
-        setEvaluationData(evaluation);
+        setInferenceFps(Number(rawFps.toFixed(2)));
+        setForwardPass(Number(rawForwardPass.toFixed(2)));
+
+        // Update data evaluasi dari websocket selama stream aktif
+        if (evaluation) {
+          setEvaluationData(evaluation);
+        }
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
       }
     };
 
     ws.onclose = () => console.log("Disconnected from Inference WS");
+
+    // Otomatis menutup websocket saat streamMode berubah jadi 0 / unmount
     return () => {
       ws.close();
     };
-  }, []);
+  }, [streamMode]); // Dep dependency disesuaikan dengan streamMode
 
   useEffect(() => {
     if (cameraError != "") {
@@ -466,6 +477,9 @@ export default function Main() {
   const onChangeGT = async (selectedBoardName) => {
     let boardId;
 
+    // Reset data evaluasi visual saat ganti board
+    setEvaluationData([]);
+
     if (selectedBoardName === "NONE") {
       boardId = "NONE";
     } else {
@@ -481,7 +495,7 @@ export default function Main() {
         const response = await apiServices.activeGT(boardId);
 
         if (response?.status === "success" || response?.status === 200 || response?.ok) {
-          setSelectedBoard(boardId);
+          setSelectedBoard(boardId); // 👈 Value tetap tersimpan
         }
       } catch (error) {
         setModalConfig({
@@ -683,7 +697,7 @@ export default function Main() {
                       } else {
                         setStreamMode(2);
                       }
-                      setEvaluationData([])
+                      setEvaluationData([]);
                     }}
                   >
                     <p>{calibrate.length === 4 ? "D E T E C T I O N" : "C A L I B R A T E"}</p>
