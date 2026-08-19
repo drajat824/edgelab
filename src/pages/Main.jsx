@@ -619,7 +619,7 @@ export default function Main() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap mb-4 gap-4 justify-between items-start">
               <div className="flex flex-row gap-2 w-full sm:w-auto items-center">
-                <Dropdown disabled={streamMode === 2} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
+                <Dropdown disabled={streamMode === 2 || streamMode === 1} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
                 <FileInput className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
               </div>
               <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
