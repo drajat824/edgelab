@@ -167,14 +167,14 @@ function generateAffinity({ status, core, thread }) {
   if (status?.core) {
     output.push({
       label: "Core Pinning",
-      command: `taskset -c ${Array.isArray(core) ? core.join(",") : core} python3 script.py`,
+      command: `os.sched_setaffinity(thread_id, set(${Array.isArray(core) ? core.join(",") : core}))`
     });
   }
 
   if (status?.thread) {
     output.push({
       label: "Threading",
-      command: `num_thread = ${thread}`,
+      command: `num_threads = ${thread}`,
     });
   }
 

@@ -1253,7 +1253,7 @@ export default function Cpu() {
         {/* Title  */}
         <h1 className="text-xtitle">Thread Allocation & Core Pinning</h1>
 
-        <p className="text-subinfo mt-2 text-gray-500">Optimize performance by assigning processes to specific CPU core and managing thread distribution.</p>
+        <p className="text-subinfo mt-2 text-gray-500">Optimize edge performance by allocating TFLite inference threads and setting CPU core affinity.</p>
 
         {/* Card  */}
         <div className="flex flex-col lg:flex-row pt-4 justify-between gap-4 h-full">
