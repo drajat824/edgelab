@@ -483,6 +483,7 @@ export default function Main() {
 
   const onChangeGT = async (selectedBoardName) => {
     let boardId;
+    setIsActionLoading(true);
 
     // Reset data evaluasi visual saat ganti board
     setEvaluationData([]);
@@ -516,6 +517,8 @@ export default function Main() {
         });
       }
     }, 400);
+
+    setIsActionLoading(false);
   };
 
   // NEW FITUR TEST

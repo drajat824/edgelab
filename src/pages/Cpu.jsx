@@ -444,6 +444,7 @@ export default function Cpu() {
   };
 
   const onValidate = async (formattedCode, error) => {
+    setIsActionLoading(true)
     if (error) {
       setModalConfig({
         isOpen: true,
@@ -480,6 +481,8 @@ export default function Cpu() {
         cancelText: "",
         onConfirm: closeModal,
       });
+    } finally {
+      setIsActionLoading(false)
     }
   };
 
