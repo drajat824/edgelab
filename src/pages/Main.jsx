@@ -267,9 +267,9 @@ export default function Main() {
   // Telemetry Pipeline: Hardware Thermal & Core Clock Speed Frequencies
   useEffect(() => {
     const wsStatus = new WebSocket(`${import.meta.env.VITE_API}/ws/metrics`);
-    wsStatus.onerror = () => {};
+    wsStatus.onerror = () => { };
 
-    wsStatus.onclose = () => {};
+    wsStatus.onclose = () => { };
     wsStatus.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setCpuStatus(data);
@@ -285,9 +285,9 @@ export default function Main() {
     }
 
     const ws = new WebSocket(`${import.meta.env.VITE_API_AI}/ws/inference`);
-    ws.onerror = () => {};
+    ws.onerror = () => { };
 
-    ws.onclose = () => {};
+    ws.onclose = () => { };
 
     ws.onmessage = (event) => {
       try {
@@ -418,6 +418,9 @@ export default function Main() {
             type: "CHANGE_SELECTED_MODEL",
             payload: e,
           });
+
+          // Reload halaman hanya jika model berhasil diganti
+          window.location.reload();
         }
       } catch (error) {
         setModalConfig({
@@ -429,12 +432,11 @@ export default function Main() {
           cancelText: "",
           onConfirm: closeModal,
         });
-      } finally {
-        window.location.reload();
+
+        // Matikan loading jika error, agar pengguna bisa melihat dan menutup modal
+        setIsActionLoading(false);
       }
     }, 400);
-
-    setIsActionLoading(false);
   };
 
   const handleSaveFile = async () => {
