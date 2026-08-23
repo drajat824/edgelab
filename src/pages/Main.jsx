@@ -429,6 +429,8 @@ export default function Main() {
           cancelText: "",
           onConfirm: closeModal,
         });
+      } finally {
+        window.location.reload();
       }
     }, 400);
 
