@@ -420,7 +420,7 @@ export default function Main() {
           });
 
           // Reload halaman hanya jika model berhasil diganti
-         window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+         window.location.href = window.location.href;
         }
       } catch (error) {
         setModalConfig({
