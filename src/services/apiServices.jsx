@@ -73,7 +73,7 @@ const apiServices = {
   // GET LOG
   getDebugLog: async () => {
     try {
-      return await api.get("/log");
+      return await api.get("/api/log");
     } catch (error) {
       throw error;
     }
@@ -142,7 +142,7 @@ const apiServices = {
 
   startCalibrate: async () => {
     try {
-      return await apiAi.get("/start-calibrate");
+      return await apiAi.get("/api/start-calibrate");
     } catch (error) {
       throw error;
     }
@@ -150,7 +150,7 @@ const apiServices = {
 
   startDetection: async ({ calibration_points }) => {
     try {
-      return await apiAi.post("/start-detection", {
+      return await apiAi.post("/api/start-detection", {
         calibration_points: calibration_points,
       });
     } catch (error) {
@@ -160,7 +160,7 @@ const apiServices = {
 
   stopVideo: async () => {
     try {
-      return await apiAi.get("/stop");
+      return await apiAi.get("/api/stop");
     } catch (error) {
       throw error;
     }
