@@ -29,7 +29,7 @@ export default function Main() {
   const { boards, dispatch: dispatchGround } = useGround();
 
   // Static API Endpoints
-  const videoUrl = `${import.meta.env.VITE_API_AI}/video`;
+  const videoUrl = `${import.meta.env.VITE_API_AI}/api/video`;
 
   // Global Page Loading States
   const [isInitialLoading, setIsInitialLoading] = useState(true);
