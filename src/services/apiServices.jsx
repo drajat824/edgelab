@@ -1,6 +1,14 @@
 import { api, apiAi } from "./api";
 
 const apiServices = {
+  // SHUTDOWN RASPBERRY PI
+  shutdownRaspberryPi: async () => {
+    try {
+      return await api.get("/api/shutdown");
+    } catch (error) {
+      throw error;
+    }
+  },
   // GET GOVERNOR
   getGovernorStatus: async () => {
     try {
