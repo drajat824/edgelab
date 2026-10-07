@@ -1,9 +1,9 @@
 import React from "react";
-import ManualBook from "../assets/files/manual_book.pdf";
-import Jobsheet_1 from "../assets/files/Jobsheet_1.pdf";
-import Jobsheet_2 from "../assets/files/Jobsheet_2.pdf";
-import Jobsheet_3 from "../assets/files/Jobsheet_3.pdf";
-import Training_Model from "../assets/files/Training_Model.ipynb";
+import ManualBook from "../../public/files/manual_book.pdf";
+import Jobsheet_1 from "../../public/files/Jobsheet_1.pdf";
+import Jobsheet_2 from "../../public/files/Jobsheet_2.pdf";
+import Jobsheet_3 from "../../public/files/Jobsheet_3.pdf";
+import Training_Model from "../../public/files/Training_Model.ipynb";
 
 export default function LearningResource() {
   const handleDownload = (fileUrl, fileName) => {
