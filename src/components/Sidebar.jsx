@@ -7,6 +7,7 @@ import MenuMainActive from "../assets/menu-main-active.svg";
 import MenuCpuActive from "../assets/menu-cpu-active.svg";
 import MenuGroundActive from "../assets/menu-ground-active.svg";
 
+import apiServices from "../services/apiServices";
 import Logo from "../assets/logo.svg";
 
 // Ikon Learning Resource (Graduation Cap - Outline)
@@ -45,10 +46,17 @@ export default function Navbar() {
 
   const handleShutdown = () => {
     const confirmed = window.confirm(
-      "Apakah kamu yakin ingin mematikan Raspberry Pi?"
+      "Are you sure you want to turn off the Trainer kit?"
     );
     if (confirmed) {
-      console.log("Shutdown RPi triggered");
+      apiServices.shutdownRaspberryPi()
+        .then((response) => {
+          alert("Trainer kit will be turned off..");
+          window.location.reload();
+        })
+        .catch((error) => {
+          alert("Error!.");
+        });
     }
   };
 
