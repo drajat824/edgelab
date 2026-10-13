@@ -626,7 +626,7 @@ export default function Main() {
                 <Dropdown disabled={streamMode === 2 || streamMode === 1} width="w-full sm:w-50" value={selectedModel} onChange={onChangeModel} options={models} type="model" />
                 <FileInput disabled={streamMode === 2 || streamMode === 1} className="w-full xl:w-auto" accept=".tflite" maxSizeMB={50} onChange={(selectedFile) => setFile(selectedFile)} onError={handleFileError} handleSave={handleSaveFile} />
               </div>
-              <Dropdown disabled={streamMode === 2} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
+              <Dropdown disabled={streamMode === 2 || streamMode === 1} value={cameraFps} onChange={(e) => onChangeFPS(e)} valueLabel="FPS Camera" options={[30, 25, 20, 15, 10, 5]} />
             </div>
 
             {/* Monitoring Section */}
