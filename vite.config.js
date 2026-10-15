@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  assetsInclude: ['**/*.ipynb', '**/*.config', '**/*.zip', '**/*.gz'],
+  assetsInclude: ['**/*.ipynb', '**/*.config', '**/*.zip', '**/*.tar'],
   server: {
     host: true,
     allowedHosts: [
