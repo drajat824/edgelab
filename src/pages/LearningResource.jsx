@@ -16,20 +16,10 @@ export default function LearningResource() {
       category: "Guide Book",
       title: "Manual Book Trainer Kit",
       description: "Guide book to using the trainer kit.",
-      fileUrl: "/files/manual_book.pdf", // Path relatif langsung dari folder public
+      fileUrl: "/files/Manual_Book.pdf", // Path relatif langsung dari folder public
       fileName: "ManualBook.pdf",
       badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-700/40",
       fileType: "PDF",
-    },
-    {
-      id: "notebook-colab",
-      category: "Notebook",
-      title: "Notebook Training (Google Colab)",
-      description: "Jupyter Notebook template file (.ipynb) for experiments in Google Colab.",
-      fileUrl: "/files/Training_Model.ipynb",
-      fileName: "Training_Model.ipynb",
-      badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-700/40",
-      fileType: "IPYNB",
     },
     {
       id: "jobsheet-1",
@@ -60,7 +50,47 @@ export default function LearningResource() {
       fileName: "Jobsheet_3.pdf",
       badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-700/30",
       fileType: "PDF",
-    }
+    },
+    {
+      id: "notebook-colab",
+      category: "Notebook",
+      title: "Notebook Training (Google Colab)",
+      description: "Jupyter Notebook template file (.ipynb) for experiments in Google Colab.",
+      fileUrl: "/files/Job3/Training_Model.ipynb",
+      fileName: "Training_Model.ipynb",
+      badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-700/40",
+      fileType: "IPYNB",
+    },
+    {
+      id: "pipeline",
+      category: "Pipeline",
+      title: "Pipeline",
+      description: "Configuration file for the training pipeline.",
+      fileUrl: "/files/Job3/pipeline.config",
+      fileName: "pipeline.config",
+      badgeColor: "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/40",
+      fileType: "CONFIG",
+    },
+    {
+      id: "Dataset",
+      category: "Dataset",
+      title: "Dataset",
+      description: "Dataset for training the object detection model.",
+      fileUrl: "/files/Job3/dataset.zip",
+      fileName: "dataset.zip",
+      badgeColor: "bg-violet-100 text-violet-700 dark:bg-violet-700/40",
+      fileType: "ZIP",
+    },
+    {
+      id: "Model",
+      category: "Model",
+      title: "Pretrained SSD-Mobilenet V2 FPNLite 320x320",
+      description: "Trained model for object detection.",
+      fileUrl: "/files/Job3/ssd_mobilenet_v2_fpnlite_320x320",
+      fileName: "ssd_mobilenet_v2_fpnlite_320x320",
+      badgeColor: "bg-pink-100 text-pink-700 dark:bg-pink-700/40",
+      fileType: "MODEL",
+    },
   ];
 
   return (
